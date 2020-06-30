@@ -13,6 +13,7 @@ import (
 	"unicode"
 )
 
+// Input implements command input and output handler.
 type Input struct {
 	in     *bufio.Reader
 	out    io.Writer
@@ -20,12 +21,15 @@ type Input struct {
 	line   []rune
 }
 
+// TokenType specifies token types.
 type TokenType byte
 
+// Command tokens.
 const (
-	T_Identifier TokenType = iota
+	TIdentifier TokenType = iota
 )
 
+// Token specifies command token value.
 type Token struct {
 	Type   TokenType
 	StrVal string
@@ -33,7 +37,7 @@ type Token struct {
 
 func (t *Token) String() string {
 	switch t.Type {
-	case T_Identifier:
+	case TIdentifier:
 		return t.StrVal
 
 	default:
@@ -41,6 +45,7 @@ func (t *Token) String() string {
 	}
 }
 
+// NewInput creates a new I/O handler.
 func NewInput(in io.Reader, out io.Writer, prompt string) (*Input, error) {
 	return &Input{
 		in:     bufio.NewReader(in),
@@ -49,6 +54,7 @@ func NewInput(in io.Reader, out io.Writer, prompt string) (*Input, error) {
 	}, nil
 }
 
+// GetToken returns the next input token.
 func (in *Input) GetToken() (*Token, error) {
 	var r rune
 	var err error
@@ -75,7 +81,7 @@ func (in *Input) GetToken() (*Token, error) {
 			} else {
 				in.UngetRune(r)
 				return &Token{
-					Type:   T_Identifier,
+					Type:   TIdentifier,
 					StrVal: string(id),
 				}, nil
 			}
@@ -83,11 +89,12 @@ func (in *Input) GetToken() (*Token, error) {
 	}
 
 	return &Token{
-		Type:   T_Identifier,
+		Type:   TIdentifier,
 		StrVal: string(r),
 	}, nil
 }
 
+// Rune returns the next input rune.
 func (in *Input) Rune() (rune, error) {
 	if len(in.line) == 0 {
 		fmt.Fprintf(in.out, "%s", in.prompt)
@@ -103,6 +110,8 @@ func (in *Input) Rune() (rune, error) {
 	return r, nil
 }
 
+// UngetRune returns the argument rune for input. The next call to
+// Rune() will return it instead of consuming input.
 func (in *Input) UngetRune(r rune) {
 	in.line = append([]rune{r}, in.line...)
 }

@@ -14,6 +14,7 @@ import (
 	"strings"
 )
 
+// Command defines a built-in command.
 type Command struct {
 	Name  string
 	Title string
@@ -24,19 +25,19 @@ var commands []Command
 
 func init() {
 	commands = append(commands, []Command{
-		Command{
+		{
 			Name:  "help",
 			Title: "Print help information",
 			Func:  help,
 		},
-		Command{
+		{
 			Name:  "print",
 			Title: "Print expression value according to format",
 			Func: func() error {
 				return fmt.Errorf("print not implemented yet")
 			},
 		},
-		Command{
+		{
 			Name:  "quit",
 			Title: "Exit calc",
 			Func: func() error {
