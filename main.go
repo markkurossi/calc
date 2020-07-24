@@ -18,10 +18,13 @@ import (
 type Command struct {
 	Name  string
 	Title string
-	Func  func() error
+	Func  func() (int, error)
 }
 
-var commands []Command
+var (
+	input    *Input
+	commands []Command
+)
 
 func init() {
 	commands = append(commands, []Command{
@@ -33,27 +36,25 @@ func init() {
 		{
 			Name:  "print",
 			Title: "Print expression value according to format",
-			Func: func() error {
-				return fmt.Errorf("print not implemented yet")
-			},
+			Func:  cmdPrint,
 		},
 		{
 			Name:  "quit",
 			Title: "Exit calc",
-			Func: func() error {
+			Func: func() (int, error) {
 				os.Exit(0)
-				return nil
+				return 0, nil
 			},
 		},
 	}...)
 }
 
-func help() error {
+func help() (int, error) {
 	fmt.Printf("Available commands are:\n\n")
 	for _, cmd := range commands {
 		fmt.Printf("%s -- %s\n", cmd.Name, cmd.Title)
 	}
-	return nil
+	return 0, nil
 }
 
 func main() {
@@ -61,13 +62,15 @@ func main() {
 
 	log.SetFlags(0)
 
-	input, err := NewInput(os.Stdin, os.Stdout, "(calc) ")
+	var err error
+
+	input, err = NewInput(os.Stdin, os.Stdout, "(calc) ")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for {
-		t, err := input.GetToken()
+		t, _, err := input.GetToken()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -92,10 +95,20 @@ func main() {
 			}
 			fmt.Fprintf(os.Stderr, "\n")
 		} else {
-			err = matches[0].Func()
+			col, err := matches[0].Func()
 			if err != nil {
-				log.Printf("%s\n", err)
+				if col > 0 {
+					var ind string
+
+					for i := 0; i < col; i++ {
+						ind += " "
+					}
+					ind += "^"
+					log.Printf("%s\n", ind)
+				}
+				log.Printf("error: %s\n", err)
 			}
+			input.FlushEOL()
 		}
 	}
 }

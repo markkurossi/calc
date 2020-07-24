@@ -19,6 +19,7 @@ type Input struct {
 	out    io.Writer
 	prompt string
 	line   []rune
+	col    int
 }
 
 // TokenType specifies token types.
@@ -27,6 +28,7 @@ type TokenType byte
 // Command tokens.
 const (
 	TIdentifier TokenType = iota
+	TSlash
 )
 
 // Token specifies command token value.
@@ -39,6 +41,9 @@ func (t *Token) String() string {
 	switch t.Type {
 	case TIdentifier:
 		return t.StrVal
+
+	case TSlash:
+		return "/"
 
 	default:
 		return fmt.Sprintf("{Token %d}", t.Type)
@@ -54,64 +59,76 @@ func NewInput(in io.Reader, out io.Writer, prompt string) (*Input, error) {
 	}, nil
 }
 
+// FlushEOL discards the current input line.
+func (in *Input) FlushEOL() {
+	in.line = []rune{}
+}
+
 // GetToken returns the next input token.
-func (in *Input) GetToken() (*Token, error) {
+func (in *Input) GetToken() (*Token, int, error) {
 	var r rune
+	var col, c int
 	var err error
 
 	for {
-		r, err = in.Rune()
+		r, col, err = in.Rune()
 		if err != nil {
-			return nil, err
+			return nil, col, err
 		}
 		if !unicode.IsSpace(r) {
 			break
 		}
 	}
+	switch r {
+	case '/':
+		return &Token{
+			Type: TSlash,
+		}, col, nil
 
-	if unicode.IsLetter(r) {
-		id := []rune{r}
-		for {
-			r, err = in.Rune()
-			if err != nil {
-				return nil, err
-			}
-			if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' {
-				id = append(id, r)
-			} else {
-				in.UngetRune(r)
-				return &Token{
-					Type:   TIdentifier,
-					StrVal: string(id),
-				}, nil
+	default:
+		if unicode.IsLetter(r) {
+			id := []rune{r}
+			for {
+				r, c, err = in.Rune()
+				if err != nil {
+					return nil, c, err
+				}
+				if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' {
+					id = append(id, r)
+				} else {
+					in.UngetRune(r)
+					return &Token{
+						Type:   TIdentifier,
+						StrVal: string(id),
+					}, col, nil
+				}
 			}
 		}
+		return nil, col, fmt.Errorf("unexpected character '%c'", r)
 	}
-
-	return &Token{
-		Type:   TIdentifier,
-		StrVal: string(r),
-	}, nil
 }
 
 // Rune returns the next input rune.
-func (in *Input) Rune() (rune, error) {
+func (in *Input) Rune() (rune, int, error) {
 	if len(in.line) == 0 {
 		fmt.Fprintf(in.out, "%s", in.prompt)
 
 		line, err := in.in.ReadString('\n')
 		if err != nil {
-			return 0, err
+			return 0, len(in.prompt), err
 		}
 		in.line = []rune(line)
+		in.col = len(in.prompt)
 	}
 	r := in.line[0]
 	in.line = in.line[1:]
-	return r, nil
+	in.col++
+	return r, in.col - 1, nil
 }
 
 // UngetRune returns the argument rune for input. The next call to
 // Rune() will return it instead of consuming input.
 func (in *Input) UngetRune(r rune) {
 	in.line = append([]rune{r}, in.line...)
+	in.col--
 }
