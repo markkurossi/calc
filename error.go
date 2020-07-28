@@ -6,6 +6,7 @@
 
 package main
 
+// Error implements error with input location information.
 type Error struct {
 	Col int
 	Err error
@@ -15,6 +16,8 @@ func (e Error) Error() string {
 	return e.Err.Error()
 }
 
+// NewError creates a new error from the error and location
+// information.
 func NewError(col int, err error) *Error {
 	return &Error{
 		Col: col,
@@ -22,6 +25,7 @@ func NewError(col int, err error) *Error {
 	}
 }
 
+// Column returns the error location information.
 func Column(err error) int {
 	e, ok := err.(*Error)
 	if ok {

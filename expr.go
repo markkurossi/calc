@@ -10,46 +10,17 @@ import (
 	"fmt"
 )
 
+var (
+	_ Expr = IntegerValue(0)
+	_ Expr = &binary{}
+)
+
+// Expr implements an expression.
 type Expr interface {
 	Eval() (Value, error)
 }
 
-type Value interface {
-	String() string
-	Format(options Options) string
-}
-
-type Options struct {
-	Base Base
-}
-
-// Base defines the output base for numbers.
-type Base int
-
-// Supported output bases.
-const (
-	Base2 Base = iota
-	Base8
-	Base10
-	Base16
-)
-
-var bases = map[Base]string{
-	Base2:  "2",
-	Base8:  "8",
-	Base10: "10",
-	Base16: "16",
-}
-
-func (b Base) String() string {
-	name, ok := bases[b]
-	if ok {
-		return name
-	}
-	return fmt.Sprintf("{base %d}", b)
-}
-
-func ParseExpr() (Expr, error) {
+func parseExpr() (Expr, error) {
 	return parseLogicalOR()
 }
 
@@ -86,11 +57,65 @@ func parseShift() (Expr, error) {
 }
 
 func parseAdditive() (Expr, error) {
-	return parseMultiplicative()
+	left, err := parseUnary()
+	if err != nil {
+		return nil, err
+	}
+	if !input.HasToken() {
+		return left, nil
+	}
+	t, err := input.GetToken()
+	if err != nil {
+		return nil, err
+	}
+	switch t.Type {
+	case TAdd, TSub:
+
+	default:
+		input.UngetToken(t)
+		return left, nil
+	}
+	right, err := parseUnary()
+	if err != nil {
+		return nil, err
+	}
+	return &binary{
+		op:    t.Type,
+		col:   t.Column,
+		left:  left,
+		right: right,
+	}, nil
 }
 
 func parseMultiplicative() (Expr, error) {
-	return parseUnary()
+	left, err := parseUnary()
+	if err != nil {
+		return nil, err
+	}
+	if !input.HasToken() {
+		return left, nil
+	}
+	t, err := input.GetToken()
+	if err != nil {
+		return nil, err
+	}
+	switch t.Type {
+	case TMult, TDiv, TPercent:
+
+	default:
+		input.UngetToken(t)
+		return left, nil
+	}
+	right, err := parseUnary()
+	if err != nil {
+		return nil, err
+	}
+	return &binary{
+		op:    t.Type,
+		col:   t.Column,
+		left:  left,
+		right: right,
+	}, nil
 }
 
 func parseUnary() (Expr, error) {
@@ -103,8 +128,64 @@ func parsePostfix() (Expr, error) {
 		return nil, err
 	}
 	switch t.Type {
+	case TInteger:
+		return IntegerValue(t.IntVal), nil
+
 	default:
 		input.UngetToken(t)
 		return nil, NewError(t.Column, fmt.Errorf("unexpected token '%s'", t))
+	}
+}
+
+type binary struct {
+	op    TokenType
+	col   int
+	left  Expr
+	right Expr
+}
+
+func (b binary) String() string {
+	return fmt.Sprintf("%s %s %s", b.left, b.op, b.right)
+}
+
+func (b binary) Eval() (Value, error) {
+	switch l := b.left.(type) {
+	case IntegerValue:
+		r, ok := b.right.(IntegerValue)
+		if !ok {
+			return nil,
+				NewError(b.col,
+					fmt.Errorf("invalid '%s' operation between %T and %T",
+						b.op, b.left, b.right))
+		}
+		var result IntegerValue
+		switch b.op {
+		case TDiv:
+			result = l / r
+
+		case TMult:
+			result = l * r
+
+		case TPercent:
+			result = l % r
+
+		case TAdd:
+			result = l + r
+
+		case TSub:
+			result = l - r
+
+		default:
+			return nil,
+				NewError(b.col,
+					fmt.Errorf("unsupport binary operand '%s'", b.op))
+		}
+		return result, nil
+
+	default:
+		return nil,
+			NewError(b.col,
+				fmt.Errorf("invalid '%s' operation between %T and %T",
+					b.op, b.left, b.right))
 	}
 }

@@ -17,7 +17,7 @@ func cmdPrint() error {
 	if err != nil {
 		return err
 	}
-	if t.Type == TSlash {
+	if t.Type == TDiv {
 		// Options.
 		t, err = input.GetToken()
 		if err != nil {
@@ -36,12 +36,17 @@ func cmdPrint() error {
 		case "x":
 			base = Base16
 
+		case "t":
+			base = BaseBinary
+
 		default:
 			return NewError(t.Column, fmt.Errorf("unknown option '%s'", t))
 		}
+	} else {
+		input.UngetToken(t)
 	}
 
-	expr, err := ParseExpr()
+	expr, err := parseExpr()
 	if err != nil {
 		return err
 	}
@@ -55,5 +60,5 @@ func cmdPrint() error {
 		Base: base,
 	}))
 
-	return fmt.Errorf("print not implemented yet")
+	return nil
 }

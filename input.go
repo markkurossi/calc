@@ -31,8 +31,30 @@ type TokenType byte
 const (
 	TIdentifier TokenType = iota
 	TInteger
-	TSlash
+	TDiv
+	TMult
+	TPercent
+	TAdd
+	TSub
 )
+
+var tokenTypes = map[TokenType]string{
+	TIdentifier: "identifier",
+	TInteger:    "integer",
+	TDiv:        "/",
+	TMult:       "*",
+	TPercent:    "%",
+	TAdd:        "+",
+	TSub:        "-",
+}
+
+func (t TokenType) String() string {
+	name, ok := tokenTypes[t]
+	if ok {
+		return name
+	}
+	return fmt.Sprintf("{TokenType %d}", t)
+}
 
 // Token specifies command token value.
 type Token struct {
@@ -50,8 +72,8 @@ func (t *Token) String() string {
 	case TInteger:
 		return fmt.Sprintf("%d", t.IntVal)
 
-	case TSlash:
-		return "/"
+	case TDiv, TMult, TPercent, TAdd, TSub:
+		return t.Type.String()
 
 	default:
 		return fmt.Sprintf("{Token %d}", t.Type)
@@ -71,6 +93,25 @@ func NewInput(in io.Reader, out io.Writer, prompt string) (*Input, error) {
 func (in *Input) FlushEOL() {
 	in.ungot = nil
 	in.line = []rune{}
+}
+
+// HasToken tests if input has any tokens without prompting user.
+func (in *Input) HasToken() bool {
+	if in.ungot != nil {
+		return true
+	}
+
+	for in.HasRune() {
+		r, _, err := in.Rune()
+		if err != nil {
+			return false
+		}
+		if !unicode.IsSpace(r) {
+			in.UngetRune(r)
+			return true
+		}
+	}
+	return false
 }
 
 // GetToken returns the next input token.
@@ -98,7 +139,31 @@ func (in *Input) GetToken() (*Token, error) {
 	case '/':
 		return &Token{
 			Column: col,
-			Type:   TSlash,
+			Type:   TDiv,
+		}, nil
+
+	case '*':
+		return &Token{
+			Column: col,
+			Type:   TMult,
+		}, nil
+
+	case '%':
+		return &Token{
+			Column: col,
+			Type:   TPercent,
+		}, nil
+
+	case '+':
+		return &Token{
+			Column: col,
+			Type:   TAdd,
+		}, nil
+
+	case '-':
+		return &Token{
+			Column: col,
+			Type:   TSub,
 		}, nil
 
 	default:
@@ -149,8 +214,15 @@ func (in *Input) GetToken() (*Token, error) {
 	}
 }
 
+// UngetToken ungets the token. The next call to GetToken will returns
+// the token instead of consuming input stream.
 func (in *Input) UngetToken(t *Token) {
 	in.ungot = t
+}
+
+// HasRune tests if input is not empty.
+func (in *Input) HasRune() bool {
+	return len(in.line) > 0
 }
 
 // Rune returns the next input rune.
