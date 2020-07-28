@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	_ Value = IntegerValue(0)
+	_ Value = Int64Value(0)
 )
 
 // Value implements a value.
@@ -88,20 +88,130 @@ func (b Base) Base() int {
 	return 10
 }
 
-// IntegerValue implements int64 values as Value.
-type IntegerValue int64
+// Type defines the supported primitive types.
+type Type int
 
-func (v IntegerValue) String() string {
-	return strconv.FormatInt(int64(v), 10)
+// Supported primitive types.
+const (
+	TypeInt Type = iota
+	TypeInt8
+	TypeInt16
+	TypeInt32
+	TypeInt64
+	TypeUint
+	TypeUint8
+	TypeUint16
+	TypeUint32
+	TypeUint64
+)
+
+var typeNames = map[Type]string{
+	TypeInt:    "int",
+	TypeInt8:   "int8",
+	TypeInt16:  "int16",
+	TypeInt32:  "int32",
+	TypeInt64:  "int64",
+	TypeUint:   "uint",
+	TypeUint8:  "uint8",
+	TypeUint16: "uint16",
+	TypeUint32: "uint32",
+	TypeUint64: "uint64",
+}
+
+func (t Type) String() string {
+	name, ok := typeNames[t]
+	if ok {
+		return name
+	}
+	return fmt.Sprintf("{Type %d}", t)
+}
+
+// IntValue implements int values as Value.
+type IntValue int
+
+func (v IntValue) String() string {
+	return strconv.FormatInt(int64(v), 16)
 }
 
 // Format implements Value.Format().
-func (v IntegerValue) Format(options Options) string {
+func (v IntValue) Format(options Options) string {
 	return options.Base.Prefix() +
 		strconv.FormatInt(int64(v), options.Base.Base())
 }
 
 // Eval implements Expr.Eval().
-func (v IntegerValue) Eval() (Value, error) {
+func (v IntValue) Eval() (Value, error) {
+	return v, nil
+}
+
+// Int8Value implements int values as Value.
+type Int8Value int
+
+func (v Int8Value) String() string {
+	return strconv.FormatInt(int64(v), 16)
+}
+
+// Format implements Value.Format().
+func (v Int8Value) Format(options Options) string {
+	return options.Base.Prefix() +
+		strconv.FormatInt(int64(v), options.Base.Base())
+}
+
+// Eval implements Expr.Eval().
+func (v Int8Value) Eval() (Value, error) {
+	return v, nil
+}
+
+// Int16Value implements int values as Value.
+type Int16Value int
+
+func (v Int16Value) String() string {
+	return strconv.FormatInt(int64(v), 16)
+}
+
+// Format implements Value.Format().
+func (v Int16Value) Format(options Options) string {
+	return options.Base.Prefix() +
+		strconv.FormatInt(int64(v), options.Base.Base())
+}
+
+// Eval implements Expr.Eval().
+func (v Int16Value) Eval() (Value, error) {
+	return v, nil
+}
+
+// Int32Value implements int values as Value.
+type Int32Value int
+
+func (v Int32Value) String() string {
+	return strconv.FormatInt(int64(v), 16)
+}
+
+// Format implements Value.Format().
+func (v Int32Value) Format(options Options) string {
+	return options.Base.Prefix() +
+		strconv.FormatInt(int64(v), options.Base.Base())
+}
+
+// Eval implements Expr.Eval().
+func (v Int32Value) Eval() (Value, error) {
+	return v, nil
+}
+
+// Int64Value implements int64 values as Value.
+type Int64Value int64
+
+func (v Int64Value) String() string {
+	return strconv.FormatInt(int64(v), 10)
+}
+
+// Format implements Value.Format().
+func (v Int64Value) Format(options Options) string {
+	return options.Base.Prefix() +
+		strconv.FormatInt(int64(v), options.Base.Base())
+}
+
+// Eval implements Expr.Eval().
+func (v Int64Value) Eval() (Value, error) {
 	return v, nil
 }

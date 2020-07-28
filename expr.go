@@ -11,7 +11,11 @@ import (
 )
 
 var (
-	_ Expr = IntegerValue(0)
+	_ Expr = IntValue(0)
+	_ Expr = Int8Value(0)
+	_ Expr = Int16Value(0)
+	_ Expr = Int32Value(0)
+	_ Expr = Int64Value(0)
 	_ Expr = &binary{}
 )
 
@@ -57,7 +61,7 @@ func parseShift() (Expr, error) {
 }
 
 func parseAdditive() (Expr, error) {
-	left, err := parseUnary()
+	left, err := parseMultiplicative()
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +79,7 @@ func parseAdditive() (Expr, error) {
 		input.UngetToken(t)
 		return left, nil
 	}
-	right, err := parseUnary()
+	right, err := parseMultiplicative()
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +133,7 @@ func parsePostfix() (Expr, error) {
 	}
 	switch t.Type {
 	case TInteger:
-		return IntegerValue(t.IntVal), nil
+		return t.IntVal, nil
 
 	default:
 		input.UngetToken(t)
@@ -149,43 +153,164 @@ func (b binary) String() string {
 }
 
 func (b binary) Eval() (Value, error) {
-	switch l := b.left.(type) {
-	case IntegerValue:
-		r, ok := b.right.(IntegerValue)
-		if !ok {
-			return nil,
-				NewError(b.col,
-					fmt.Errorf("invalid '%s' operation between %T and %T",
-						b.op, b.left, b.right))
+	v1, err := b.left.Eval()
+	if err != nil {
+		return nil, err
+	}
+	v2, err := b.right.Eval()
+	if err != nil {
+		return nil, err
+	}
+	t, err := ConversionType(v1, v2)
+	if err != nil {
+		return nil, err
+	}
+
+	switch t {
+	case TypeInt:
+		i1, err := ValueInt(v1)
+		if err != nil {
+			return nil, err
 		}
-		var result IntegerValue
+		i2, err := ValueInt(v2)
+		if err != nil {
+			return nil, err
+		}
+		var result int
 		switch b.op {
 		case TDiv:
-			result = l / r
-
+			result = i1 / i2
 		case TMult:
-			result = l * r
-
+			result = i1 * i2
 		case TPercent:
-			result = l % r
-
+			result = i1 % i2
 		case TAdd:
-			result = l + r
-
+			result = i1 + i2
 		case TSub:
-			result = l - r
-
+			result = i1 - i2
 		default:
 			return nil,
-				NewError(b.col,
-					fmt.Errorf("unsupport binary operand '%s'", b.op))
+				NewError(b.col, fmt.Errorf("unsupport binary operand '%s'",
+					b.op))
 		}
-		return result, nil
+		return IntValue(result), nil
+
+	case TypeInt8:
+		i1, err := ValueInt8(v1)
+		if err != nil {
+			return nil, err
+		}
+		i2, err := ValueInt8(v2)
+		if err != nil {
+			return nil, err
+		}
+		var result int8
+		switch b.op {
+		case TDiv:
+			result = i1 / i2
+		case TMult:
+			result = i1 * i2
+		case TPercent:
+			result = i1 % i2
+		case TAdd:
+			result = i1 + i2
+		case TSub:
+			result = i1 - i2
+		default:
+			return nil,
+				NewError(b.col, fmt.Errorf("unsupport binary operand '%s'",
+					b.op))
+		}
+		return Int8Value(result), nil
+
+	case TypeInt16:
+		i1, err := ValueInt16(v1)
+		if err != nil {
+			return nil, err
+		}
+		i2, err := ValueInt16(v2)
+		if err != nil {
+			return nil, err
+		}
+		var result int16
+		switch b.op {
+		case TDiv:
+			result = i1 / i2
+		case TMult:
+			result = i1 * i2
+		case TPercent:
+			result = i1 % i2
+		case TAdd:
+			result = i1 + i2
+		case TSub:
+			result = i1 - i2
+		default:
+			return nil,
+				NewError(b.col, fmt.Errorf("unsupport binary operand '%s'",
+					b.op))
+		}
+		return Int16Value(result), nil
+
+	case TypeInt32:
+		i1, err := ValueInt32(v1)
+		if err != nil {
+			return nil, err
+		}
+		i2, err := ValueInt32(v2)
+		if err != nil {
+			return nil, err
+		}
+		var result int32
+		switch b.op {
+		case TDiv:
+			result = i1 / i2
+		case TMult:
+			result = i1 * i2
+		case TPercent:
+			result = i1 % i2
+		case TAdd:
+			result = i1 + i2
+		case TSub:
+			result = i1 - i2
+		default:
+			return nil,
+				NewError(b.col, fmt.Errorf("unsupport binary operand '%s'",
+					b.op))
+		}
+		return Int32Value(result), nil
+
+	case TypeInt64:
+		i1, err := ValueInt64(v1)
+		if err != nil {
+			return nil, err
+		}
+		i2, err := ValueInt64(v2)
+		if err != nil {
+			return nil, err
+		}
+		var result int64
+		switch b.op {
+		case TDiv:
+			result = i1 / i2
+		case TMult:
+			result = i1 * i2
+		case TPercent:
+			result = i1 % i2
+		case TAdd:
+			result = i1 + i2
+		case TSub:
+			result = i1 - i2
+		default:
+			return nil,
+				NewError(b.col, fmt.Errorf("unsupport binary operand '%s'",
+					b.op))
+		}
+		return Int64Value(result), nil
 
 	default:
 		return nil,
 			NewError(b.col,
-				fmt.Errorf("invalid '%s' operation between %T and %T",
-					b.op, b.left, b.right))
+				fmt.Errorf("unsupport values %s and %s for binary operand '%s'",
+					v1, v2, b.op))
 	}
 }

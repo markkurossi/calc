@@ -8,10 +8,15 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"unicode"
+
+	"github.com/markkurossi/tabulate"
 )
 
 func cmdPrint() error {
 	base := Base10
+	asCharacter := false
 
 	t, err := input.GetToken()
 	if err != nil {
@@ -39,6 +44,9 @@ func cmdPrint() error {
 		case "t":
 			base = BaseBinary
 
+		case "c":
+			asCharacter = true
+
 		default:
 			return NewError(t.Column, fmt.Errorf("unknown option '%s'", t))
 		}
@@ -56,9 +64,42 @@ func cmdPrint() error {
 		return err
 	}
 
+	if asCharacter {
+		return printAsCharacter(val)
+	}
 	fmt.Printf("%s\n", val.Format(Options{
 		Base: base,
 	}))
+
+	return nil
+}
+
+func printAsCharacter(v Value) error {
+	r, err := ValueInt32(v)
+	if err != nil {
+		return err
+	}
+
+	tab := tabulate.New(tabulate.Unicode)
+	tab.Header("Type").SetAlign(tabulate.MR)
+	tab.Header("Value").SetAlign(tabulate.MR)
+
+	row := tab.Row()
+	row.Column("Decimal")
+	row.Column(fmt.Sprintf("%d", r))
+
+	row = tab.Row()
+	row.Column("Unicode")
+	row.Column(fmt.Sprintf("\\u%04x", r))
+
+	row = tab.Row()
+	row.Column("Symbol")
+	if unicode.IsPrint(r) {
+		row.Column(fmt.Sprintf("%c", r))
+	} else {
+		row.Column("{unprintable}")
+	}
+	tab.Print(os.Stdout)
 
 	return nil
 }

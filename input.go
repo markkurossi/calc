@@ -61,7 +61,7 @@ type Token struct {
 	Column int
 	Type   TokenType
 	StrVal string
-	IntVal int64
+	IntVal Expr
 }
 
 func (t *Token) String() string {
@@ -205,7 +205,7 @@ func (in *Input) GetToken() (*Token, error) {
 					return &Token{
 						Column: col,
 						Type:   TInteger,
-						IntVal: i64,
+						IntVal: IntValue(i64),
 					}, nil
 				}
 			}
