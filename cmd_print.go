@@ -10,47 +10,21 @@ import (
 	"fmt"
 )
 
-// Base defines the output base for numbers.
-type Base int
-
-// Supported output bases.
-const (
-	Base2 Base = iota
-	Base8
-	Base10
-	Base16
-)
-
-var bases = map[Base]string{
-	Base2:  "2",
-	Base8:  "8",
-	Base10: "10",
-	Base16: "16",
-}
-
-func (b Base) String() string {
-	name, ok := bases[b]
-	if ok {
-		return name
-	}
-	return fmt.Sprintf("{base %d}", b)
-}
-
-func cmdPrint() (int, error) {
+func cmdPrint() error {
 	base := Base10
 
-	t, col, err := input.GetToken()
+	t, err := input.GetToken()
 	if err != nil {
-		return col, err
+		return err
 	}
 	if t.Type == TSlash {
 		// Options.
-		t, col, err = input.GetToken()
+		t, err = input.GetToken()
 		if err != nil {
-			return col, err
+			return err
 		}
 		if t.Type != TIdentifier {
-			return col, fmt.Errorf("unexpected token '%s'", t)
+			return NewError(t.Column, fmt.Errorf("unexpected token '%s'", t))
 		}
 		switch t.StrVal {
 		case "b":
@@ -63,10 +37,23 @@ func cmdPrint() (int, error) {
 			base = Base16
 
 		default:
-			return col, fmt.Errorf("unknown option '%s'", t)
+			return NewError(t.Column, fmt.Errorf("unknown option '%s'", t))
 		}
 	}
-	fmt.Printf("base: %s\n", base)
 
-	return 0, fmt.Errorf("print not implemented yet")
+	expr, err := ParseExpr()
+	if err != nil {
+		return err
+	}
+
+	val, err := expr.Eval()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s\n", val.Format(Options{
+		Base: base,
+	}))
+
+	return fmt.Errorf("print not implemented yet")
 }

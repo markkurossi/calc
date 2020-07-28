@@ -18,7 +18,7 @@ import (
 type Command struct {
 	Name  string
 	Title string
-	Func  func() (int, error)
+	Func  func() error
 }
 
 var (
@@ -41,20 +41,20 @@ func init() {
 		{
 			Name:  "quit",
 			Title: "Exit calc",
-			Func: func() (int, error) {
+			Func: func() error {
 				os.Exit(0)
-				return 0, nil
+				return nil
 			},
 		},
 	}...)
 }
 
-func help() (int, error) {
+func help() error {
 	fmt.Printf("Available commands are:\n\n")
 	for _, cmd := range commands {
 		fmt.Printf("%s -- %s\n", cmd.Name, cmd.Title)
 	}
-	return 0, nil
+	return nil
 }
 
 func main() {
@@ -70,7 +70,7 @@ func main() {
 	}
 
 	for {
-		t, _, err := input.GetToken()
+		t, err := input.GetToken()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -95,8 +95,9 @@ func main() {
 			}
 			fmt.Fprintf(os.Stderr, "\n")
 		} else {
-			col, err := matches[0].Func()
+			err := matches[0].Func()
 			if err != nil {
+				col := Column(err)
 				if col > 0 {
 					var ind string
 

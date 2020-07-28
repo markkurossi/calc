@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"strconv"
 	"unicode"
 )
 
@@ -20,6 +21,7 @@ type Input struct {
 	prompt string
 	line   []rune
 	col    int
+	ungot  *Token
 }
 
 // TokenType specifies token types.
@@ -28,19 +30,25 @@ type TokenType byte
 // Command tokens.
 const (
 	TIdentifier TokenType = iota
+	TInteger
 	TSlash
 )
 
 // Token specifies command token value.
 type Token struct {
+	Column int
 	Type   TokenType
 	StrVal string
+	IntVal int64
 }
 
 func (t *Token) String() string {
 	switch t.Type {
 	case TIdentifier:
 		return t.StrVal
+
+	case TInteger:
+		return fmt.Sprintf("%d", t.IntVal)
 
 	case TSlash:
 		return "/"
@@ -61,19 +69,26 @@ func NewInput(in io.Reader, out io.Writer, prompt string) (*Input, error) {
 
 // FlushEOL discards the current input line.
 func (in *Input) FlushEOL() {
+	in.ungot = nil
 	in.line = []rune{}
 }
 
 // GetToken returns the next input token.
-func (in *Input) GetToken() (*Token, int, error) {
+func (in *Input) GetToken() (*Token, error) {
 	var r rune
 	var col, c int
 	var err error
 
+	if in.ungot != nil {
+		ret := in.ungot
+		in.ungot = nil
+		return ret, nil
+	}
+
 	for {
 		r, col, err = in.Rune()
 		if err != nil {
-			return nil, col, err
+			return nil, NewError(col, err)
 		}
 		if !unicode.IsSpace(r) {
 			break
@@ -82,8 +97,9 @@ func (in *Input) GetToken() (*Token, int, error) {
 	switch r {
 	case '/':
 		return &Token{
-			Type: TSlash,
-		}, col, nil
+			Column: col,
+			Type:   TSlash,
+		}, nil
 
 	default:
 		if unicode.IsLetter(r) {
@@ -91,21 +107,50 @@ func (in *Input) GetToken() (*Token, int, error) {
 			for {
 				r, c, err = in.Rune()
 				if err != nil {
-					return nil, c, err
+					return nil, NewError(c, err)
 				}
 				if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' {
 					id = append(id, r)
 				} else {
 					in.UngetRune(r)
 					return &Token{
+						Column: col,
 						Type:   TIdentifier,
 						StrVal: string(id),
-					}, col, nil
+					}, nil
 				}
 			}
 		}
-		return nil, col, fmt.Errorf("unexpected character '%c'", r)
+		if unicode.IsDigit(r) {
+			// XXX 0{x,b,o}DIGITS
+			val := []rune{r}
+			for {
+				r, c, err = in.Rune()
+				if err != nil {
+					return nil, NewError(c, err)
+				}
+				if unicode.IsDigit(r) {
+					val = append(val, r)
+				} else {
+					in.UngetRune(r)
+					i64, err := strconv.ParseInt(string(val), 10, 64)
+					if err != nil {
+						return nil, NewError(col, err)
+					}
+					return &Token{
+						Column: col,
+						Type:   TInteger,
+						IntVal: i64,
+					}, nil
+				}
+			}
+		}
+		return nil, NewError(col, fmt.Errorf("unexpected character '%c'", r))
 	}
+}
+
+func (in *Input) UngetToken(t *Token) {
+	in.ungot = t
 }
 
 // Rune returns the next input rune.
