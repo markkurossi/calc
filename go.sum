@@ -1,0 +1,6 @@
+github.com/markkurossi/tabulate v0.0.0-20200729081855-063aae19c2cb h1:szk+QfgTyu/AAYpbazbrQCYqD888Pr9f/Ha7/u7UiTU=
+github.com/markkurossi/tabulate v0.0.0-20200729081855-063aae19c2cb/go.mod h1:VNUmSpF+Vv8IUImoBIhSMElphepJke637i93RBFCDMs=
+github.com/mattn/go-runewidth v0.0.3 h1:a+kO+98RDGEfo6asOGMmpodZq4FNtnGP54yps8BzLR4=
+github.com/mattn/go-runewidth v0.0.3/go.mod h1:LwmH8dsx7+W8Uxz3IHJYH5QSwggIsqBzpuz5H//U1FU=
+github.com/peterh/liner v1.2.0 h1:w/UPXyl5GfahFxcTOz2j9wCIHNI+pUPr2laqpojKNCg=
+github.com/peterh/liner v1.2.0/go.mod h1:CRroGNssyjTd/qIG2FyxByd2S8JEAZXBl4qUrZf8GS0=

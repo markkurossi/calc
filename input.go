@@ -7,21 +7,20 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"strconv"
 	"unicode"
+
+	"github.com/peterh/liner"
 )
 
 // Input implements command input and output handler.
 type Input struct {
-	in     *bufio.Reader
-	out    io.Writer
 	prompt string
 	line   []rune
 	col    int
 	ungot  *Token
+	liner  *liner.State
 }
 
 // TokenType specifies token types.
@@ -81,12 +80,16 @@ func (t *Token) String() string {
 }
 
 // NewInput creates a new I/O handler.
-func NewInput(in io.Reader, out io.Writer, prompt string) (*Input, error) {
+func NewInput(prompt string) (*Input, error) {
 	return &Input{
-		in:     bufio.NewReader(in),
-		out:    out,
 		prompt: prompt,
+		liner:  liner.NewLiner(),
 	}, nil
+}
+
+// Close closes the input.
+func (in *Input) Close() {
+	in.liner.Close()
 }
 
 // FlushEOL discards the current input line.
@@ -247,13 +250,12 @@ func (in *Input) HasRune() bool {
 // Rune returns the next input rune.
 func (in *Input) Rune() (rune, int, error) {
 	if len(in.line) == 0 {
-		fmt.Fprintf(in.out, "%s", in.prompt)
-
-		line, err := in.in.ReadString('\n')
+		line, err := in.liner.Prompt(in.prompt)
 		if err != nil {
 			return 0, len(in.prompt), err
 		}
-		in.line = []rune(line)
+		in.liner.AppendHistory(line)
+		in.line = append([]rune(line), '\n')
 		in.col = len(in.prompt)
 	}
 	r := in.line[0]

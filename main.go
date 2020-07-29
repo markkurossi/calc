@@ -42,6 +42,7 @@ func init() {
 			Name:  "quit",
 			Title: "Exit calc",
 			Func: func() error {
+				input.Close()
 				os.Exit(0)
 				return nil
 			},
@@ -64,15 +65,17 @@ func main() {
 
 	var err error
 
-	input, err = NewInput(os.Stdin, os.Stdout, "(calc) ")
+	input, err = NewInput("(calc) ")
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer input.Close()
 
 	for {
 		t, err := input.GetToken()
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("%s\n", err)
+			return
 		}
 		name := t.String()
 
