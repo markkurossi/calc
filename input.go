@@ -166,6 +166,25 @@ func (in *Input) GetToken() (*Token, error) {
 			Type:   TSub,
 		}, nil
 
+	case '\'':
+		ch, chCol, err := in.Rune()
+		if err != nil {
+			return nil, NewError(col, err)
+		}
+		r, col, err = in.Rune()
+		if err != nil {
+			return nil, NewError(col, err)
+		}
+		if r != '\'' {
+			return nil, NewError(col,
+				fmt.Errorf("unexpected character '%c' in char literal", r))
+		}
+		return &Token{
+			Column: chCol,
+			Type:   TInteger,
+			IntVal: Int8Value(ch),
+		}, nil
+
 	default:
 		if unicode.IsLetter(r) {
 			id := []rune{r}

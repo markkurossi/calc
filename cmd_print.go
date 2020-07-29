@@ -81,7 +81,7 @@ func printAsCharacter(v Value) error {
 	}
 
 	tab := tabulate.New(tabulate.Unicode)
-	tab.Header("Type").SetAlign(tabulate.MR)
+	tab.Header("Format").SetAlign(tabulate.MR)
 	tab.Header("Value").SetAlign(tabulate.MR)
 
 	row := tab.Row()
@@ -90,7 +90,11 @@ func printAsCharacter(v Value) error {
 
 	row = tab.Row()
 	row.Column("Unicode")
-	row.Column(fmt.Sprintf("\\u%04x", r))
+	if r <= 0xffff {
+		row.Column(fmt.Sprintf("\\u%04x", r))
+	} else {
+		row.Column(fmt.Sprintf("\\U%08x", r))
+	}
 
 	row = tab.Row()
 	row.Column("Symbol")
