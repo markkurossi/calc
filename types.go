@@ -10,97 +10,91 @@ import (
 	"fmt"
 )
 
-// ConversionType returns the type conversion type for the argument
-// values
-func ConversionType(value1, value2 Value) (Type, error) {
-	switch value1.(type) {
-	case IntValue:
-		switch value2.(type) {
-		case IntValue, Int8Value, Int16Value, Int32Value:
-			return TypeInt, nil
+// Type defines the supported primitive types.
+type Type int
 
-		case Int64Value:
-			return TypeInt64, nil
-		}
+// Supported primitive types.
+const (
+	TypeBool Type = iota
+	TypeInt8
+	TypeUint8
+	TypeInt16
+	TypeUint16
+	TypeInt32
+	TypeUint32
+	TypeInt64
+	TypeUint64
+)
 
-	case Int8Value:
-		switch value2.(type) {
-		case IntValue:
-			return TypeInt, nil
-
-		case Int8Value:
-			return TypeInt8, nil
-
-		case Int16Value:
-			return TypeInt16, nil
-
-		case Int32Value:
-			return TypeInt32, nil
-
-		case Int64Value:
-			return TypeInt64, nil
-		}
-
-	case Int16Value:
-		switch value2.(type) {
-		case IntValue:
-			return TypeInt, nil
-
-		case Int8Value, Int16Value:
-			return TypeInt16, nil
-
-		case Int32Value:
-			return TypeInt32, nil
-
-		case Int64Value:
-			return TypeInt64, nil
-		}
-
-	case Int32Value:
-		switch value2.(type) {
-		case IntValue:
-			return TypeInt, nil
-
-		case Int8Value, Int16Value, Int32Value:
-			return TypeInt32, nil
-
-		case Int64Value:
-			return TypeInt64, nil
-		}
-
-	case Int64Value:
-		switch value2.(type) {
-		case IntValue, Int8Value, Int16Value, Int32Value, Int64Value:
-			return TypeInt64, nil
-		}
-	}
-
-	return 0, fmt.Errorf("type conversion failed for types %T and %T",
-		value1, value2)
+var typeNames = map[Type]string{
+	TypeBool:   "bool",
+	TypeInt8:   "int8",
+	TypeUint8:  "uint8",
+	TypeInt16:  "int16",
+	TypeUint16: "uint16",
+	TypeInt32:  "int32",
+	TypeUint32: "uint32",
+	TypeInt64:  "int64",
+	TypeUint64: "uint64",
 }
 
-// ValueInt returns the value as int.
-func ValueInt(value Value) (int, error) {
-	switch v := value.(type) {
-	case IntValue:
-		return int(v), nil
-	case Int8Value:
-		return int(v), nil
-	case Int16Value:
-		return int(v), nil
-	case Int32Value:
-		return int(v), nil
-	case Int64Value:
-		return int(v), nil
+func (t Type) String() string {
+	name, ok := typeNames[t]
+	if ok {
+		return name
 	}
-	return 0, fmt.Errorf("type conversion from %T to int failed", value)
+	return fmt.Sprintf("{Type %d}", t)
+}
+
+// ConversionType returns the type conversion type for the argument
+// values i.e. the smallest type that is capable to represent both
+// argument values.
+func ConversionType(value1, value2 Value) (Type, error) {
+	t1 := value1.Type()
+	t2 := value2.Type()
+	if t1 > t2 {
+		return t1, nil
+	}
+	return t2, nil
+}
+
+// ValueBool returns the value as bool.
+func ValueInt(value Value) (bool, error) {
+	switch v := value.(type) {
+	case BoolValue:
+		return bool(v), nil
+	case Int8Value:
+		if v != 0 {
+			return true, nil
+		}
+		return false, nil
+	case Int16Value:
+		if v != 0 {
+			return true, nil
+		}
+		return false, nil
+	case Int32Value:
+		if v != 0 {
+			return true, nil
+		}
+		return false, nil
+	case Int64Value:
+		if v != 0 {
+			return true, nil
+		}
+		return false, nil
+	}
+	return false, fmt.Errorf("type conversion from %T to int failed", value)
 }
 
 // ValueInt8 returns the value as int8.
 func ValueInt8(value Value) (int8, error) {
 	switch v := value.(type) {
-	case IntValue:
-		return int8(v), nil
+	case BoolValue:
+		if v {
+			return int8(1), nil
+		}
+		return int8(0), nil
 	case Int8Value:
 		return int8(v), nil
 	case Int16Value:
@@ -116,8 +110,11 @@ func ValueInt8(value Value) (int8, error) {
 // ValueInt16 returns the value as int16.
 func ValueInt16(value Value) (int16, error) {
 	switch v := value.(type) {
-	case IntValue:
-		return int16(v), nil
+	case BoolValue:
+		if v {
+			return int16(1), nil
+		}
+		return int16(0), nil
 	case Int8Value:
 		return int16(v), nil
 	case Int16Value:
@@ -133,8 +130,11 @@ func ValueInt16(value Value) (int16, error) {
 // ValueInt32 returns the value as int32.
 func ValueInt32(value Value) (int32, error) {
 	switch v := value.(type) {
-	case IntValue:
-		return int32(v), nil
+	case BoolValue:
+		if v {
+			return int32(1), nil
+		}
+		return int32(0), nil
 	case Int8Value:
 		return int32(v), nil
 	case Int16Value:
@@ -150,8 +150,11 @@ func ValueInt32(value Value) (int32, error) {
 // ValueInt64 returns the value as int64.
 func ValueInt64(value Value) (int64, error) {
 	switch v := value.(type) {
-	case IntValue:
-		return int64(v), nil
+	case BoolValue:
+		if v {
+			return int64(1), nil
+		}
+		return int64(0), nil
 	case Int8Value:
 		return int64(v), nil
 	case Int16Value:

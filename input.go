@@ -227,7 +227,7 @@ func (in *Input) GetToken() (*Token, error) {
 					return &Token{
 						Column: col,
 						Type:   TInteger,
-						IntVal: IntValue(i64),
+						IntVal: Int64Value(i64),
 					}, nil
 				}
 			}

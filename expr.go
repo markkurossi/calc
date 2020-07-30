@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	_ Expr = IntValue(0)
+	_ Expr = BoolValue(false)
 	_ Expr = Int8Value(0)
 	_ Expr = Int16Value(0)
 	_ Expr = Int32Value(0)
@@ -167,34 +167,6 @@ func (b binary) Eval() (Value, error) {
 	}
 
 	switch t {
-	case TypeInt:
-		i1, err := ValueInt(v1)
-		if err != nil {
-			return nil, err
-		}
-		i2, err := ValueInt(v2)
-		if err != nil {
-			return nil, err
-		}
-		var result int
-		switch b.op {
-		case TDiv:
-			result = i1 / i2
-		case TMult:
-			result = i1 * i2
-		case TPercent:
-			result = i1 % i2
-		case TAdd:
-			result = i1 + i2
-		case TSub:
-			result = i1 - i2
-		default:
-			return nil,
-				NewError(b.col, fmt.Errorf("unsupport binary operand '%s'",
-					b.op))
-		}
-		return IntValue(result), nil
-
 	case TypeInt8:
 		i1, err := ValueInt8(v1)
 		if err != nil {
