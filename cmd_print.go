@@ -80,9 +80,9 @@ func printAsCharacter(v Value) error {
 		return err
 	}
 
-	tab := tabulate.New(tabulate.Unicode)
+	tab := tabulate.New(tabulate.Simple)
 	tab.Header("Format").SetAlign(tabulate.MR)
-	tab.Header("Value").SetAlign(tabulate.MR)
+	tab.Header("Value").SetAlign(tabulate.ML)
 
 	row := tab.Row()
 	row.Column("Decimal")
