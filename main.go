@@ -18,6 +18,7 @@ import (
 type Command struct {
 	Name  string
 	Title string
+	Help  string
 	Func  func() error
 }
 
@@ -36,7 +37,17 @@ func init() {
 		{
 			Name:  "print",
 			Title: "Print expression value according to format",
-			Func:  cmdPrint,
+			Help: `print [/FORMAT] EXPRESSION
+
+Print the value of the EXPRESSION. The optional FORMAT specifies the
+output format:
+  b -- binary (base 2) format
+  o -- octal (base 8) format
+  x -- hexadecimal (base 16) format
+  t -- binary (base 2) format without '0b' prefix
+  c -- character value in different character constants
+  s -- character string`,
+			Func: cmdPrint,
 		},
 		{
 			Name:  "quit",
@@ -51,6 +62,21 @@ func init() {
 }
 
 func help() error {
+	if input.HasToken() {
+		t, err := input.GetToken()
+		if err != nil {
+			return err
+		}
+		name := t.String()
+		for _, cmd := range commands {
+			if name == cmd.Name {
+				fmt.Println(cmd.Help)
+				return nil
+			}
+		}
+		fmt.Printf("Undefined command: \"%s\"\n", name)
+		return nil
+	}
 	fmt.Printf("Available commands are:\n\n")
 	for _, cmd := range commands {
 		fmt.Printf("%s -- %s\n", cmd.Name, cmd.Title)
