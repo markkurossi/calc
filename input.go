@@ -219,8 +219,34 @@ func (in *Input) getToken(first bool) (*Token, error) {
 				}
 			}
 		}
+		if r == '0' {
+			r, c, err = in.Rune(first)
+			if err != nil {
+				return nil, NewError(c, err)
+			}
+			var i64 int64
+			switch r {
+			case 'b', 'B':
+				i64, err = in.readBinaryLiteral([]rune{'0', r})
+			case 'o', 'O':
+				i64, err = in.readOctalLiteral([]rune{'0', r})
+			case 'x', 'X':
+				i64, err = in.readHexLiteral([]rune{'0', r})
+			case '0', '1', '2', '3', '4', '5', '6', '7':
+				i64, err = in.readOctalLiteral([]rune{'0', r})
+			default:
+				in.UngetRune(r)
+			}
+			if err != nil {
+				return nil, NewError(col, err)
+			}
+			return &Token{
+				Column: col,
+				Type:   TInteger,
+				IntVal: Int64Value(i64),
+			}, nil
+		}
 		if unicode.IsDigit(r) {
-			// XXX 0{x,b,o}DIGITS
 			val := []rune{r}
 			for {
 				r, c, err = in.Rune(first)
@@ -244,6 +270,53 @@ func (in *Input) getToken(first bool) (*Token, error) {
 			}
 		}
 		return nil, NewError(col, fmt.Errorf("unexpected character '%c'", r))
+	}
+}
+
+func (in *Input) readBinaryLiteral(val []rune) (int64, error) {
+	for {
+		r, c, err := in.Rune(false)
+		if err != nil {
+			return 0, NewError(c, err)
+		}
+		switch r {
+		case '0', '1':
+			val = append(val, r)
+		default:
+			in.UngetRune(r)
+			return strconv.ParseInt(string(val), 0, 64)
+		}
+	}
+}
+
+func (in *Input) readOctalLiteral(val []rune) (int64, error) {
+	for {
+		r, c, err := in.Rune(false)
+		if err != nil {
+			return 0, NewError(c, err)
+		}
+		switch r {
+		case '0', '1', '2', '3', '4', '5', '6', '7':
+			val = append(val, r)
+		default:
+			in.UngetRune(r)
+			return strconv.ParseInt(string(val), 0, 64)
+		}
+	}
+}
+
+func (in *Input) readHexLiteral(val []rune) (int64, error) {
+	for {
+		r, c, err := in.Rune(false)
+		if err != nil {
+			return 0, NewError(c, err)
+		}
+		if unicode.Is(unicode.Hex_Digit, r) {
+			val = append(val, r)
+		} else {
+			in.UngetRune(r)
+			return strconv.ParseInt(string(val), 0, 64)
+		}
 	}
 }
 
