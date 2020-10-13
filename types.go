@@ -59,7 +59,7 @@ func ConversionType(value1, value2 Value) (Type, error) {
 }
 
 // ValueBool returns the value as bool.
-func ValueInt(value Value) (bool, error) {
+func ValueBool(value Value) (bool, error) {
 	switch v := value.(type) {
 	case BoolValue:
 		return bool(v), nil

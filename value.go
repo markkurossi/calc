@@ -24,7 +24,8 @@ type Value interface {
 
 // Options define value output options.
 type Options struct {
-	Base Base
+	Base   Base
+	String bool
 }
 
 // Base defines the output base for numbers.
@@ -89,6 +90,23 @@ func (b Base) Base() int {
 	return 10
 }
 
+func stringify(v int64, base Base) string {
+	var result string
+
+	for i := 56; i >= 0; i -= 8 {
+		b := (v >> i) & 0xff
+		if b == 0 {
+			if len(result) > 0 {
+				result += "."
+			}
+		} else {
+			result += string(rune(b))
+		}
+	}
+
+	return result
+}
+
 // BoolValue implements bool values as Value.
 type BoolValue bool
 
@@ -123,6 +141,9 @@ func (v Int8Value) String() string {
 
 // Format implements Value.Format().
 func (v Int8Value) Format(options Options) string {
+	if options.String {
+		return stringify(int64(v), options.Base)
+	}
 	return options.Base.Prefix() +
 		strconv.FormatInt(int64(v), options.Base.Base())
 }
@@ -146,6 +167,9 @@ func (v Int16Value) String() string {
 
 // Format implements Value.Format().
 func (v Int16Value) Format(options Options) string {
+	if options.String {
+		return stringify(int64(v), options.Base)
+	}
 	return options.Base.Prefix() +
 		strconv.FormatInt(int64(v), options.Base.Base())
 }
@@ -169,6 +193,9 @@ func (v Int32Value) String() string {
 
 // Format implements Value.Format().
 func (v Int32Value) Format(options Options) string {
+	if options.String {
+		return stringify(int64(v), options.Base)
+	}
 	return options.Base.Prefix() +
 		strconv.FormatInt(int64(v), options.Base.Base())
 }
@@ -192,6 +219,9 @@ func (v Int64Value) String() string {
 
 // Format implements Value.Format().
 func (v Int64Value) Format(options Options) string {
+	if options.String {
+		return stringify(int64(v), options.Base)
+	}
 	return options.Base.Prefix() +
 		strconv.FormatInt(int64(v), options.Base.Base())
 }

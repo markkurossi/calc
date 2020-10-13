@@ -105,7 +105,7 @@ func (in *Input) HasToken() bool {
 	}
 
 	for in.HasRune() {
-		r, _, err := in.Rune()
+		r, _, err := in.Rune(false)
 		if err != nil {
 			return false
 		}
@@ -117,8 +117,19 @@ func (in *Input) HasToken() bool {
 	return false
 }
 
-// GetToken returns the next input token.
+// GetFirstToken returns the next input token which is the first token
+// of a command.
+func (in *Input) GetFirstToken() (*Token, error) {
+	return in.getToken(true)
+}
+
+// GetToken returns the next input token which is a subsequent token
+// in a command.
 func (in *Input) GetToken() (*Token, error) {
+	return in.getToken(false)
+}
+
+func (in *Input) getToken(first bool) (*Token, error) {
 	var r rune
 	var col, c int
 	var err error
@@ -130,7 +141,7 @@ func (in *Input) GetToken() (*Token, error) {
 	}
 
 	for {
-		r, col, err = in.Rune()
+		r, col, err = in.Rune(first)
 		if err != nil {
 			return nil, NewError(col, err)
 		}
@@ -170,11 +181,11 @@ func (in *Input) GetToken() (*Token, error) {
 		}, nil
 
 	case '\'':
-		ch, chCol, err := in.Rune()
+		ch, chCol, err := in.Rune(first)
 		if err != nil {
 			return nil, NewError(col, err)
 		}
-		r, col, err = in.Rune()
+		r, col, err = in.Rune(first)
 		if err != nil {
 			return nil, NewError(col, err)
 		}
@@ -192,7 +203,7 @@ func (in *Input) GetToken() (*Token, error) {
 		if unicode.IsLetter(r) {
 			id := []rune{r}
 			for {
-				r, c, err = in.Rune()
+				r, c, err = in.Rune(first)
 				if err != nil {
 					return nil, NewError(c, err)
 				}
@@ -212,7 +223,7 @@ func (in *Input) GetToken() (*Token, error) {
 			// XXX 0{x,b,o}DIGITS
 			val := []rune{r}
 			for {
-				r, c, err = in.Rune()
+				r, c, err = in.Rune(first)
 				if err != nil {
 					return nil, NewError(c, err)
 				}
@@ -248,9 +259,14 @@ func (in *Input) HasRune() bool {
 }
 
 // Rune returns the next input rune.
-func (in *Input) Rune() (rune, int, error) {
+func (in *Input) Rune(first bool) (rune, int, error) {
 	if len(in.line) == 0 {
-		line, err := in.liner.Prompt(in.prompt)
+		var prompt = in.prompt
+		if !first {
+			prompt = "> "
+		}
+
+		line, err := in.liner.Prompt(prompt)
 		if err != nil {
 			return 0, len(in.prompt), err
 		}

@@ -17,6 +17,7 @@ import (
 func cmdPrint() error {
 	base := Base10
 	asCharacter := false
+	asString := false
 
 	t, err := input.GetToken()
 	if err != nil {
@@ -47,6 +48,9 @@ func cmdPrint() error {
 		case "c":
 			asCharacter = true
 
+		case "s":
+			asString = true
+
 		default:
 			return NewError(t.Column, fmt.Errorf("unknown option '%s'", t))
 		}
@@ -66,6 +70,9 @@ func cmdPrint() error {
 
 	if asCharacter {
 		return printAsCharacter(val)
+	}
+	if asString {
+		return printAsString(val)
 	}
 	fmt.Printf("%s\n", val.Format(Options{
 		Base: base,
@@ -105,5 +112,13 @@ func printAsCharacter(v Value) error {
 	}
 	tab.Print(os.Stdout)
 
+	return nil
+}
+
+func printAsString(v Value) error {
+	fmt.Println(v.Format(Options{
+		Base:   Base8,
+		String: true,
+	}))
 	return nil
 }

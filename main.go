@@ -59,6 +59,9 @@ func help() error {
 }
 
 func main() {
+	fmt.Println("calc - programmer's calculator")
+	fmt.Println("Type `help' for information about available commands.")
+
 	flag.Parse()
 
 	log.SetFlags(0)
@@ -72,7 +75,7 @@ func main() {
 	defer input.Close()
 
 	for {
-		t, err := input.GetToken()
+		t, err := input.GetFirstToken()
 		if err != nil {
 			log.Printf("%s\n", err)
 			return
