@@ -104,6 +104,10 @@ func printAsCharacter(v Value) error {
 	}
 
 	row = tab.Row()
+	row.Column("XML")
+	row.Column(fmt.Sprintf("&#x%x;", r))
+
+	row = tab.Row()
 	row.Column("Symbol")
 	if unicode.IsPrint(r) {
 		row.Column(fmt.Sprintf("%c", r))
