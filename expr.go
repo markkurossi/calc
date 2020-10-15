@@ -65,30 +65,32 @@ func parseAdditive() (Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !input.HasToken() {
-		return left, nil
-	}
-	t, err := input.GetToken()
-	if err != nil {
-		return nil, err
-	}
-	switch t.Type {
-	case TAdd, TSub:
+	for {
+		if !input.HasToken() {
+			return left, nil
+		}
+		t, err := input.GetToken()
+		if err != nil {
+			return nil, err
+		}
+		switch t.Type {
+		case TAdd, TSub:
 
-	default:
-		input.UngetToken(t)
-		return left, nil
+		default:
+			input.UngetToken(t)
+			return left, nil
+		}
+		right, err := parseMultiplicative()
+		if err != nil {
+			return nil, err
+		}
+		left = &binary{
+			op:    t.Type,
+			col:   t.Column,
+			left:  left,
+			right: right,
+		}
 	}
-	right, err := parseMultiplicative()
-	if err != nil {
-		return nil, err
-	}
-	return &binary{
-		op:    t.Type,
-		col:   t.Column,
-		left:  left,
-		right: right,
-	}, nil
 }
 
 func parseMultiplicative() (Expr, error) {
@@ -96,30 +98,32 @@ func parseMultiplicative() (Expr, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !input.HasToken() {
-		return left, nil
-	}
-	t, err := input.GetToken()
-	if err != nil {
-		return nil, err
-	}
-	switch t.Type {
-	case TMult, TDiv, TPercent:
+	for {
+		if !input.HasToken() {
+			return left, nil
+		}
+		t, err := input.GetToken()
+		if err != nil {
+			return nil, err
+		}
+		switch t.Type {
+		case TMult, TDiv, TPercent:
 
-	default:
-		input.UngetToken(t)
-		return left, nil
+		default:
+			input.UngetToken(t)
+			return left, nil
+		}
+		right, err := parseUnary()
+		if err != nil {
+			return nil, err
+		}
+		left = &binary{
+			op:    t.Type,
+			col:   t.Column,
+			left:  left,
+			right: right,
+		}
 	}
-	right, err := parseUnary()
-	if err != nil {
-		return nil, err
-	}
-	return &binary{
-		op:    t.Type,
-		col:   t.Column,
-		left:  left,
-		right: right,
-	}, nil
 }
 
 func parseUnary() (Expr, error) {
