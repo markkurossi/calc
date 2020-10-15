@@ -199,6 +199,33 @@ func (in *Input) getToken(first bool) (*Token, error) {
 			IntVal: Int8Value(ch),
 		}, nil
 
+	case '0':
+		r, c, err = in.Rune(first)
+		if err != nil {
+			return nil, NewError(c, err)
+		}
+		var i64 int64
+		switch r {
+		case 'b', 'B':
+			i64, err = in.readBinaryLiteral([]rune{'0', r})
+		case 'o', 'O':
+			i64, err = in.readOctalLiteral([]rune{'0', r})
+		case 'x', 'X':
+			i64, err = in.readHexLiteral([]rune{'0', r})
+		case '0', '1', '2', '3', '4', '5', '6', '7':
+			i64, err = in.readOctalLiteral([]rune{'0', r})
+		default:
+			in.UngetRune(r)
+		}
+		if err != nil {
+			return nil, NewError(col, err)
+		}
+		return &Token{
+			Column: col,
+			Type:   TInteger,
+			IntVal: Int64Value(i64),
+		}, nil
+
 	default:
 		if unicode.IsLetter(r) {
 			id := []rune{r}
@@ -218,33 +245,6 @@ func (in *Input) getToken(first bool) (*Token, error) {
 					}, nil
 				}
 			}
-		}
-		if r == '0' {
-			r, c, err = in.Rune(first)
-			if err != nil {
-				return nil, NewError(c, err)
-			}
-			var i64 int64
-			switch r {
-			case 'b', 'B':
-				i64, err = in.readBinaryLiteral([]rune{'0', r})
-			case 'o', 'O':
-				i64, err = in.readOctalLiteral([]rune{'0', r})
-			case 'x', 'X':
-				i64, err = in.readHexLiteral([]rune{'0', r})
-			case '0', '1', '2', '3', '4', '5', '6', '7':
-				i64, err = in.readOctalLiteral([]rune{'0', r})
-			default:
-				in.UngetRune(r)
-			}
-			if err != nil {
-				return nil, NewError(col, err)
-			}
-			return &Token{
-				Column: col,
-				Type:   TInteger,
-				IntVal: Int64Value(i64),
-			}, nil
 		}
 		if unicode.IsDigit(r) {
 			val := []rune{r}
