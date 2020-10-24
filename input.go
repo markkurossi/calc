@@ -191,12 +191,41 @@ func (in *Input) getToken(first bool) (*Token, error) {
 		if err != nil {
 			return nil, NewError(col, err)
 		}
+		if ch == '\\' {
+			ch, chCol, err = in.Rune(first)
+			if err != nil {
+				return nil, NewError(col, err)
+			}
+			switch ch {
+			case 'a':
+				ch = '\a'
+			case 'b':
+				ch = '\b'
+			case 'f':
+				ch = '\f'
+			case 'n':
+				ch = '\n'
+			case 'r':
+				ch = '\r'
+			case 't':
+				ch = '\t'
+			case 'v':
+				ch = '\v'
+			case '\\':
+				ch = '\\'
+			case '\'':
+				ch = '\''
+			default:
+				return nil, NewError(chCol,
+					fmt.Errorf("unexpected character '%c' in char literal", ch))
+			}
+		}
 		r, col, err = in.Rune(first)
 		if err != nil {
 			return nil, NewError(col, err)
 		}
 		if r != '\'' {
-			return nil, NewError(col,
+			return nil, NewError(chCol,
 				fmt.Errorf("unexpected character '%c' in char literal", r))
 		}
 		return &Token{
