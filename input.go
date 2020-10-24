@@ -30,6 +30,7 @@ type TokenType byte
 const (
 	TIdentifier TokenType = iota
 	TInteger
+	TFloat
 	TDiv
 	TMult
 	TPercent
@@ -40,6 +41,7 @@ const (
 var tokenTypes = map[TokenType]string{
 	TIdentifier: "identifier",
 	TInteger:    "integer",
+	TFloat:      "float",
 	TDiv:        "/",
 	TMult:       "*",
 	TPercent:    "%",
@@ -57,10 +59,11 @@ func (t TokenType) String() string {
 
 // Token specifies command token value.
 type Token struct {
-	Column int
-	Type   TokenType
-	StrVal string
-	IntVal Expr
+	Column   int
+	Type     TokenType
+	StrVal   string
+	IntVal   Expr
+	FloatVal Expr
 }
 
 func (t *Token) String() string {
@@ -70,6 +73,9 @@ func (t *Token) String() string {
 
 	case TInteger:
 		return fmt.Sprintf("%d", t.IntVal)
+
+	case TFloat:
+		return fmt.Sprintf("%f", t.FloatVal)
 
 	case TDiv, TMult, TPercent, TAdd, TSub:
 		return t.Type.String()
@@ -214,6 +220,16 @@ func (in *Input) getToken(first bool) (*Token, error) {
 			i64, err = in.readHexLiteral([]rune{'0', r})
 		case '0', '1', '2', '3', '4', '5', '6', '7':
 			i64, err = in.readOctalLiteral([]rune{'0', r})
+		case '.':
+			f64, err := in.readFloatLiteral([]rune{'0', r})
+			if err != nil {
+				return nil, err
+			}
+			return &Token{
+				Column:   col,
+				Type:     TFloat,
+				FloatVal: Float64Value(f64),
+			}, nil
 		default:
 			in.UngetRune(r)
 		}
@@ -255,6 +271,16 @@ func (in *Input) getToken(first bool) (*Token, error) {
 				}
 				if unicode.IsDigit(r) {
 					val = append(val, r)
+				} else if r == '.' {
+					f64, err := in.readFloatLiteral(append(val, r))
+					if err != nil {
+						return nil, err
+					}
+					return &Token{
+						Column:   col,
+						Type:     TFloat,
+						FloatVal: Float64Value(f64),
+					}, nil
 				} else {
 					in.UngetRune(r)
 					i64, err := strconv.ParseInt(string(val), 10, 64)
@@ -316,6 +342,21 @@ func (in *Input) readHexLiteral(val []rune) (int64, error) {
 		} else {
 			in.UngetRune(r)
 			return strconv.ParseInt(string(val), 0, 64)
+		}
+	}
+}
+
+func (in *Input) readFloatLiteral(val []rune) (float64, error) {
+	for {
+		r, c, err := in.Rune(false)
+		if err != nil {
+			return 0, NewError(c, err)
+		}
+		if unicode.IsDigit(r) {
+			val = append(val, r)
+		} else {
+			in.UngetRune(r)
+			return strconv.ParseFloat(string(val), 64)
 		}
 	}
 }

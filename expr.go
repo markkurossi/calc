@@ -16,6 +16,7 @@ var (
 	_ Expr = Int16Value(0)
 	_ Expr = Int32Value(0)
 	_ Expr = Int64Value(0)
+	_ Expr = Float64Value(0)
 	_ Expr = &binary{}
 )
 
@@ -138,6 +139,9 @@ func parsePostfix() (Expr, error) {
 	switch t.Type {
 	case TInteger:
 		return t.IntVal, nil
+
+	case TFloat:
+		return t.FloatVal, nil
 
 	default:
 		input.UngetToken(t)
@@ -282,6 +286,32 @@ func (b binary) Eval() (Value, error) {
 					b.op))
 		}
 		return Int64Value(result), nil
+
+	case TypeFloat64:
+		i1, err := ValueFloat64(v1)
+		if err != nil {
+			return nil, err
+		}
+		i2, err := ValueFloat64(v2)
+		if err != nil {
+			return nil, err
+		}
+		var result float64
+		switch b.op {
+		case TDiv:
+			result = i1 / i2
+		case TMult:
+			result = i1 * i2
+		case TAdd:
+			result = i1 + i2
+		case TSub:
+			result = i1 - i2
+		default:
+			return nil,
+				NewError(b.col, fmt.Errorf("unsupport binary operand '%s'",
+					b.op))
+		}
+		return Float64Value(result), nil
 
 	default:
 		return nil,

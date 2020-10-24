@@ -24,18 +24,20 @@ const (
 	TypeUint32
 	TypeInt64
 	TypeUint64
+	TypeFloat64
 )
 
 var typeNames = map[Type]string{
-	TypeBool:   "bool",
-	TypeInt8:   "int8",
-	TypeUint8:  "uint8",
-	TypeInt16:  "int16",
-	TypeUint16: "uint16",
-	TypeInt32:  "int32",
-	TypeUint32: "uint32",
-	TypeInt64:  "int64",
-	TypeUint64: "uint64",
+	TypeBool:    "bool",
+	TypeInt8:    "int8",
+	TypeUint8:   "uint8",
+	TypeInt16:   "int16",
+	TypeUint16:  "uint16",
+	TypeInt32:   "int32",
+	TypeUint32:  "uint32",
+	TypeInt64:   "int64",
+	TypeUint64:  "uint64",
+	TypeFloat64: "float64",
 }
 
 func (t Type) String() string {
@@ -165,4 +167,26 @@ func ValueInt64(value Value) (int64, error) {
 		return int64(v), nil
 	}
 	return 0, fmt.Errorf("type conversion from %T to int64 failed", value)
+}
+
+// ValueFloat64 returns the value as float64.
+func ValueFloat64(value Value) (float64, error) {
+	switch v := value.(type) {
+	case BoolValue:
+		if v {
+			return float64(1), nil
+		}
+		return float64(0), nil
+	case Int8Value:
+		return float64(v), nil
+	case Int16Value:
+		return float64(v), nil
+	case Int32Value:
+		return float64(v), nil
+	case Int64Value:
+		return float64(v), nil
+	case Float64Value:
+		return float64(v), nil
+	}
+	return 0, fmt.Errorf("type conversion from %T to float64 failed", value)
 }

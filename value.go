@@ -12,7 +12,12 @@ import (
 )
 
 var (
+	_ Value = BoolValue(false)
+	_ Value = Int8Value(0)
+	_ Value = Int16Value(0)
+	_ Value = Int32Value(0)
 	_ Value = Int64Value(0)
+	_ Value = Float64Value(0)
 )
 
 // Value implements a value.
@@ -88,6 +93,24 @@ func (b Base) Base() int {
 		return base
 	}
 	return 10
+}
+
+var formats = map[Base]byte{
+	Base2:      'b',
+	Base8:      'g',
+	Base10:     'g',
+	Base16:     'x',
+	BaseBinary: 'b',
+}
+
+// FloatFormat returns base format for the strconv.FormatFloat
+// function.
+func (b Base) FloatFormat() byte {
+	fmt, ok := formats[b]
+	if ok {
+		return fmt
+	}
+	return 'g'
 }
 
 func stringify(v int64, base Base) string {
@@ -233,5 +256,30 @@ func (v Int64Value) Type() Type {
 
 // Eval implements Expr.Eval().
 func (v Int64Value) Eval() (Value, error) {
+	return v, nil
+}
+
+// Float64Value implements float64 values as Value.
+type Float64Value float64
+
+func (v Float64Value) String() string {
+	return strconv.FormatFloat(float64(v), 'g', -1, 64)
+}
+
+// Format implements Value.Format().
+func (v Float64Value) Format(options Options) string {
+	if options.String {
+		return stringify(int64(v), options.Base)
+	}
+	return strconv.FormatFloat(float64(v), options.Base.FloatFormat(), -1, 64)
+}
+
+// Type implements Value.Type().
+func (v Float64Value) Type() Type {
+	return TypeFloat64
+}
+
+// Eval implements Expr.Eval().
+func (v Float64Value) Eval() (Value, error) {
 	return v, nil
 }
