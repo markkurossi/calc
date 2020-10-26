@@ -36,6 +36,8 @@ const (
 	TPercent
 	TAdd
 	TSub
+	TLParen
+	TRParen
 )
 
 var tokenTypes = map[TokenType]string{
@@ -47,6 +49,8 @@ var tokenTypes = map[TokenType]string{
 	TPercent:    "%",
 	TAdd:        "+",
 	TSub:        "-",
+	TLParen:     "(",
+	TRParen:     ")",
 }
 
 func (t TokenType) String() string {
@@ -77,7 +81,7 @@ func (t *Token) String() string {
 	case TFloat:
 		return fmt.Sprintf("%f", t.FloatVal)
 
-	case TDiv, TMult, TPercent, TAdd, TSub:
+	case TDiv, TMult, TPercent, TAdd, TSub, TLParen, TRParen:
 		return t.Type.String()
 
 	default:
@@ -184,6 +188,18 @@ func (in *Input) getToken(first bool) (*Token, error) {
 		return &Token{
 			Column: col,
 			Type:   TSub,
+		}, nil
+
+	case '(':
+		return &Token{
+			Column: col,
+			Type:   TLParen,
+		}, nil
+
+	case ')':
+		return &Token{
+			Column: col,
+			Type:   TRParen,
 		}, nil
 
 	case '\'':

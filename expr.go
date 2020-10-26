@@ -137,6 +137,21 @@ func parsePostfix() (Expr, error) {
 		return nil, err
 	}
 	switch t.Type {
+	case TLParen:
+		expr, err := parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		t, err = input.GetToken()
+		if err != nil {
+			return nil, err
+		}
+		if t.Type != TRParen {
+			return nil,
+				NewError(t.Column, fmt.Errorf("unexpected token '%s'", t))
+		}
+		return expr, nil
+
 	case TInteger:
 		return t.IntVal, nil
 
