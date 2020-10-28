@@ -18,7 +18,7 @@ var (
 	_ Expr = Int64Value(0)
 	_ Expr = Float64Value(0)
 	_ Expr = &binary{}
-	_ Expr = &negation{}
+	_ Expr = &unary{}
 )
 
 // Expr implements an expression.
@@ -139,7 +139,8 @@ func parseUnary() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &negation{
+		return &unary{
+			op:    t.Type,
 			col:   t.Column,
 			value: expr,
 		}, nil
@@ -355,16 +356,17 @@ func (b binary) Eval() (Value, error) {
 	}
 }
 
-type negation struct {
+type unary struct {
+	op    TokenType
 	col   int
 	value Expr
 }
 
-func (n negation) String() string {
+func (n unary) String() string {
 	return fmt.Sprintf("-%s", n.value)
 }
 
-func (n negation) Eval() (Value, error) {
+func (n unary) Eval() (Value, error) {
 	val, err := n.value.Eval()
 	if err != nil {
 		return nil, err
@@ -375,18 +377,49 @@ func (n negation) Eval() (Value, error) {
 		if err != nil {
 			return nil, err
 		}
-		return Int32Value(-ival), nil
+		var result int32
+		switch n.op {
+		case '-':
+			result = -ival
+		default:
+			return nil, NewError(n.col, fmt.Errorf("unsupported %s unary %s",
+				val.Type(), n.op))
+		}
+		return Int32Value(result), nil
 
 	case TypeInt64:
 		ival, err := ValueInt64(val)
 		if err != nil {
 			return nil, err
 		}
-		return Int64Value(-ival), nil
+		var result int64
+		switch n.op {
+		case '-':
+			result = -ival
+		default:
+			return nil, NewError(n.col, fmt.Errorf("unsupported %s unary %s",
+				val.Type(), n.op))
+		}
+		return Int64Value(result), nil
+
+	case TypeFloat64:
+		ival, err := ValueFloat64(val)
+		if err != nil {
+			return nil, err
+		}
+		var result float64
+		switch n.op {
+		case '-':
+			result = -ival
+		default:
+			return nil, NewError(n.col, fmt.Errorf("unsupported %s unary %s",
+				val.Type(), n.op))
+		}
+		return Float64Value(result), nil
 
 	default:
 		return nil,
-			NewError(n.col, fmt.Errorf("unsupport %s value %s for negation",
-				val.Type(), val))
+			NewError(n.col, fmt.Errorf("unsupport %s value %s for unary %s",
+				val.Type(), val, n.op))
 	}
 }
