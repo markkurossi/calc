@@ -18,6 +18,7 @@ var (
 	_ Expr = Int64Value(0)
 	_ Expr = Float64Value(0)
 	_ Expr = &binary{}
+	_ Expr = &negation{}
 )
 
 // Expr implements an expression.
@@ -128,7 +129,25 @@ func parseMultiplicative() (Expr, error) {
 }
 
 func parseUnary() (Expr, error) {
-	return parsePostfix()
+	t, err := input.GetToken()
+	if err != nil {
+		return nil, err
+	}
+	switch t.Type {
+	case '-':
+		expr, err := parsePostfix()
+		if err != nil {
+			return nil, err
+		}
+		return &negation{
+			col:   t.Column,
+			value: expr,
+		}, nil
+
+	default:
+		input.UngetToken(t)
+		return parsePostfix()
+	}
 }
 
 func parsePostfix() (Expr, error) {
@@ -333,5 +352,41 @@ func (b binary) Eval() (Value, error) {
 			NewError(b.col,
 				fmt.Errorf("unsupport values %s and %s for binary operand '%s'",
 					v1, v2, b.op))
+	}
+}
+
+type negation struct {
+	col   int
+	value Expr
+}
+
+func (n negation) String() string {
+	return fmt.Sprintf("-%s", n.value)
+}
+
+func (n negation) Eval() (Value, error) {
+	val, err := n.value.Eval()
+	if err != nil {
+		return nil, err
+	}
+	switch val.Type() {
+	case TypeInt32:
+		ival, err := ValueInt32(val)
+		if err != nil {
+			return nil, err
+		}
+		return Int32Value(-ival), nil
+
+	case TypeInt64:
+		ival, err := ValueInt64(val)
+		if err != nil {
+			return nil, err
+		}
+		return Int64Value(-ival), nil
+
+	default:
+		return nil,
+			NewError(n.col, fmt.Errorf("unsupport %s value %s for negation",
+				val.Type(), val))
 	}
 }

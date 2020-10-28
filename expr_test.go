@@ -77,6 +77,10 @@ var exprTests = []exprTest{
 		in:  "1.1",
 		out: "1.1",
 	},
+	{
+		in:  "-42",
+		out: "-42",
+	},
 }
 
 func TestExpr(t *testing.T) {
