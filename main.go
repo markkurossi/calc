@@ -12,6 +12,8 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"github.com/peterh/liner"
 )
 
 // Command defines a built-in command.
@@ -94,7 +96,7 @@ func main() {
 
 	var err error
 
-	input, err = NewInput("(calc) ")
+	input, err = NewInput("(calc) ", liner.NewLiner())
 	if err != nil {
 		log.Fatal(err)
 	}

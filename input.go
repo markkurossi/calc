@@ -10,53 +10,40 @@ import (
 	"fmt"
 	"strconv"
 	"unicode"
-
-	"github.com/peterh/liner"
 )
 
 // Input implements command input and output handler.
 type Input struct {
-	prompt string
-	line   []rune
-	col    int
-	ungot  *Token
-	liner  *liner.State
+	prompt   string
+	line     []rune
+	col      int
+	ungot    *Token
+	readline Readline
 }
 
 // TokenType specifies token types.
-type TokenType byte
+type TokenType int
 
 // Command tokens.
 const (
-	TIdentifier TokenType = iota
+	TIdentifier TokenType = iota + 256
 	TInteger
 	TFloat
-	TDiv
-	TMult
-	TPercent
-	TAdd
-	TSub
-	TLParen
-	TRParen
 )
 
 var tokenTypes = map[TokenType]string{
 	TIdentifier: "identifier",
 	TInteger:    "integer",
 	TFloat:      "float",
-	TDiv:        "/",
-	TMult:       "*",
-	TPercent:    "%",
-	TAdd:        "+",
-	TSub:        "-",
-	TLParen:     "(",
-	TRParen:     ")",
 }
 
 func (t TokenType) String() string {
 	name, ok := tokenTypes[t]
 	if ok {
 		return name
+	}
+	if t < TIdentifier {
+		return fmt.Sprintf("%c", rune(t))
 	}
 	return fmt.Sprintf("{TokenType %d}", t)
 }
@@ -81,25 +68,22 @@ func (t *Token) String() string {
 	case TFloat:
 		return fmt.Sprintf("%f", t.FloatVal)
 
-	case TDiv, TMult, TPercent, TAdd, TSub, TLParen, TRParen:
-		return t.Type.String()
-
 	default:
-		return fmt.Sprintf("{Token %d}", t.Type)
+		return t.Type.String()
 	}
 }
 
 // NewInput creates a new I/O handler.
-func NewInput(prompt string) (*Input, error) {
+func NewInput(prompt string, readline Readline) (*Input, error) {
 	return &Input{
-		prompt: prompt,
-		liner:  liner.NewLiner(),
+		prompt:   prompt,
+		readline: readline,
 	}, nil
 }
 
 // Close closes the input.
 func (in *Input) Close() {
-	in.liner.Close()
+	in.readline.Close()
 }
 
 // FlushEOL discards the current input line.
@@ -160,46 +144,10 @@ func (in *Input) getToken(first bool) (*Token, error) {
 		}
 	}
 	switch r {
-	case '/':
+	case '/', '*', '%', '+', '-', '(', ')':
 		return &Token{
 			Column: col,
-			Type:   TDiv,
-		}, nil
-
-	case '*':
-		return &Token{
-			Column: col,
-			Type:   TMult,
-		}, nil
-
-	case '%':
-		return &Token{
-			Column: col,
-			Type:   TPercent,
-		}, nil
-
-	case '+':
-		return &Token{
-			Column: col,
-			Type:   TAdd,
-		}, nil
-
-	case '-':
-		return &Token{
-			Column: col,
-			Type:   TSub,
-		}, nil
-
-	case '(':
-		return &Token{
-			Column: col,
-			Type:   TLParen,
-		}, nil
-
-	case ')':
-		return &Token{
-			Column: col,
-			Type:   TRParen,
+			Type:   TokenType(r),
 		}, nil
 
 	case '\'':
@@ -248,6 +196,28 @@ func (in *Input) getToken(first bool) (*Token, error) {
 			Column: chCol,
 			Type:   TInteger,
 			IntVal: Int8Value(ch),
+		}, nil
+
+	case '.':
+		r, c, err = in.Rune(first)
+		if err != nil {
+			return nil, NewError(c, err)
+		}
+		if unicode.IsDigit(r) {
+			f64, err := in.readFloatLiteral([]rune{'.', r})
+			if err != nil {
+				return nil, err
+			}
+			return &Token{
+				Column:   col,
+				Type:     TFloat,
+				FloatVal: Float64Value(f64),
+			}, nil
+		}
+		in.UngetRune(r)
+		return &Token{
+			Column: col,
+			Type:   TokenType('.'),
 		}, nil
 
 	case '0':
@@ -425,11 +395,11 @@ func (in *Input) Rune(first bool) (rune, int, error) {
 			prompt = "> "
 		}
 
-		line, err := in.liner.Prompt(prompt)
+		line, err := in.readline.Prompt(prompt)
 		if err != nil {
 			return 0, len(in.prompt), err
 		}
-		in.liner.AppendHistory(line)
+		in.readline.AppendHistory(line)
 		in.line = append([]rune(line), '\n')
 		in.col = len(in.prompt)
 	}

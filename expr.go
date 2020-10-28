@@ -75,7 +75,7 @@ func parseAdditive() (Expr, error) {
 			return nil, err
 		}
 		switch t.Type {
-		case TAdd, TSub:
+		case '+', '-':
 
 		default:
 			input.UngetToken(t)
@@ -108,7 +108,7 @@ func parseMultiplicative() (Expr, error) {
 			return nil, err
 		}
 		switch t.Type {
-		case TMult, TDiv, TPercent:
+		case '*', '/', '%':
 
 		default:
 			input.UngetToken(t)
@@ -137,7 +137,7 @@ func parsePostfix() (Expr, error) {
 		return nil, err
 	}
 	switch t.Type {
-	case TLParen:
+	case '(':
 		expr, err := parseExpr()
 		if err != nil {
 			return nil, err
@@ -146,7 +146,7 @@ func parsePostfix() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		if t.Type != TRParen {
+		if t.Type != ')' {
 			return nil,
 				NewError(t.Column, fmt.Errorf("unexpected token '%s'", t))
 		}
@@ -201,15 +201,15 @@ func (b binary) Eval() (Value, error) {
 		}
 		var result int8
 		switch b.op {
-		case TDiv:
+		case '/':
 			result = i1 / i2
-		case TMult:
+		case '*':
 			result = i1 * i2
-		case TPercent:
+		case '%':
 			result = i1 % i2
-		case TAdd:
+		case '+':
 			result = i1 + i2
-		case TSub:
+		case '-':
 			result = i1 - i2
 		default:
 			return nil,
@@ -229,15 +229,15 @@ func (b binary) Eval() (Value, error) {
 		}
 		var result int16
 		switch b.op {
-		case TDiv:
+		case '/':
 			result = i1 / i2
-		case TMult:
+		case '*':
 			result = i1 * i2
-		case TPercent:
+		case '%':
 			result = i1 % i2
-		case TAdd:
+		case '+':
 			result = i1 + i2
-		case TSub:
+		case '-':
 			result = i1 - i2
 		default:
 			return nil,
@@ -257,15 +257,15 @@ func (b binary) Eval() (Value, error) {
 		}
 		var result int32
 		switch b.op {
-		case TDiv:
+		case '/':
 			result = i1 / i2
-		case TMult:
+		case '*':
 			result = i1 * i2
-		case TPercent:
+		case '%':
 			result = i1 % i2
-		case TAdd:
+		case '+':
 			result = i1 + i2
-		case TSub:
+		case '-':
 			result = i1 - i2
 		default:
 			return nil,
@@ -285,15 +285,15 @@ func (b binary) Eval() (Value, error) {
 		}
 		var result int64
 		switch b.op {
-		case TDiv:
+		case '/':
 			result = i1 / i2
-		case TMult:
+		case '*':
 			result = i1 * i2
-		case TPercent:
+		case '%':
 			result = i1 % i2
-		case TAdd:
+		case '+':
 			result = i1 + i2
-		case TSub:
+		case '-':
 			result = i1 - i2
 		default:
 			return nil,
@@ -313,13 +313,13 @@ func (b binary) Eval() (Value, error) {
 		}
 		var result float64
 		switch b.op {
-		case TDiv:
+		case '/':
 			result = i1 / i2
-		case TMult:
+		case '*':
 			result = i1 * i2
-		case TAdd:
+		case '+':
 			result = i1 + i2
-		case TSub:
+		case '-':
 			result = i1 - i2
 		default:
 			return nil,

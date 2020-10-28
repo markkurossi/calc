@@ -23,7 +23,7 @@ func cmdPrint() error {
 	if err != nil {
 		return err
 	}
-	if t.Type == TDiv {
+	if t.Type == '/' {
 		// Options.
 		t, err = input.GetToken()
 		if err != nil {
