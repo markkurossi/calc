@@ -87,7 +87,7 @@ func help() error {
 }
 
 func main() {
-	fmt.Println("calc - programmer's calculator")
+	fmt.Println("calc - programmers' calculator")
 	fmt.Println("Type `help' for information about available commands.")
 
 	flag.Parse()
