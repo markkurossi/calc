@@ -1,2 +1,2 @@
 # calc
-Programmer's calculator
+Programmers' calculator
