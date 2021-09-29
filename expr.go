@@ -63,6 +63,9 @@ func parseShift() (Expr, error) {
 	if err != nil {
 		return nil, err
 	}
+	if !input.HasToken() {
+		return left, nil
+	}
 	t, err := input.GetToken()
 	if err != nil {
 		return nil, err
