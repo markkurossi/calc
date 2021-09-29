@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Markku Rossi
+// Copyright (c) 2020-2021 Markku Rossi
 //
 // All rights reserved.
 //
@@ -29,12 +29,16 @@ const (
 	TIdentifier TokenType = iota + 256
 	TInteger
 	TFloat
+	TLeftShift
+	TRightShift
 )
 
 var tokenTypes = map[TokenType]string{
 	TIdentifier: "identifier",
 	TInteger:    "integer",
 	TFloat:      "float",
+	TLeftShift:  "<<",
+	TRightShift: ">>",
 }
 
 func (t TokenType) String() string {
@@ -149,6 +153,26 @@ func (in *Input) getToken(first bool) (*Token, error) {
 			Column: col,
 			Type:   TokenType(r),
 		}, nil
+
+	case '<':
+		n, _, err := in.Rune(first)
+		if err != nil {
+			return nil, NewError(col, err)
+		}
+		switch n {
+		case '<':
+			return &Token{
+				Column: col,
+				Type:   TLeftShift,
+			}, nil
+
+		default:
+			in.UngetRune(n)
+			return &Token{
+				Column: col,
+				Type:   TokenType(r),
+			}, nil
+		}
 
 	case '\'':
 		ch, chCol, err := in.Rune(first)

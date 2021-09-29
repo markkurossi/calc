@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Markku Rossi
+// Copyright (c) 2020-2021 Markku Rossi
 //
 // All rights reserved.
 //
@@ -59,7 +59,31 @@ func parseRelational() (Expr, error) {
 }
 
 func parseShift() (Expr, error) {
-	return parseAdditive()
+	left, err := parseAdditive()
+	if err != nil {
+		return nil, err
+	}
+	t, err := input.GetToken()
+	if err != nil {
+		return nil, err
+	}
+	switch t.Type {
+	case TLeftShift, TRightShift:
+
+	default:
+		input.UngetToken(t)
+		return left, nil
+	}
+	right, err := parseAdditive()
+	if err != nil {
+		return nil, err
+	}
+	return &binary{
+		op:    t.Type,
+		col:   t.Column,
+		left:  left,
+		right: right,
+	}, nil
 }
 
 func parseAdditive() (Expr, error) {
@@ -231,6 +255,10 @@ func (b binary) Eval() (Value, error) {
 			result = i1 + i2
 		case '-':
 			result = i1 - i2
+		case TLeftShift:
+			result = i1 << i2
+		case TRightShift:
+			result = i1 >> i2
 		default:
 			return nil,
 				NewError(b.col, fmt.Errorf("unsupport binary operand '%s'",
@@ -259,6 +287,10 @@ func (b binary) Eval() (Value, error) {
 			result = i1 + i2
 		case '-':
 			result = i1 - i2
+		case TLeftShift:
+			result = i1 << i2
+		case TRightShift:
+			result = i1 >> i2
 		default:
 			return nil,
 				NewError(b.col, fmt.Errorf("unsupport binary operand '%s'",
@@ -287,6 +319,10 @@ func (b binary) Eval() (Value, error) {
 			result = i1 + i2
 		case '-':
 			result = i1 - i2
+		case TLeftShift:
+			result = i1 << i2
+		case TRightShift:
+			result = i1 >> i2
 		default:
 			return nil,
 				NewError(b.col, fmt.Errorf("unsupport binary operand '%s'",
@@ -315,6 +351,10 @@ func (b binary) Eval() (Value, error) {
 			result = i1 + i2
 		case '-':
 			result = i1 - i2
+		case TLeftShift:
+			result = i1 << i2
+		case TRightShift:
+			result = i1 >> i2
 		default:
 			return nil,
 				NewError(b.col, fmt.Errorf("unsupport binary operand '%s'",
