@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020-2021 Markku Rossi
+// Copyright (c) 2020-2024 Markku Rossi
 //
 // All rights reserved.
 //
@@ -148,7 +148,7 @@ func (in *Input) getToken(first bool) (*Token, error) {
 		}
 	}
 	switch r {
-	case '/', '*', '%', '+', '-', '(', ')':
+	case '/', '*', '%', '+', '-', '(', ')', ',':
 		return &Token{
 			Column: col,
 			Type:   TokenType(r),
@@ -228,15 +228,20 @@ func (in *Input) getToken(first bool) (*Token, error) {
 			return nil, NewError(c, err)
 		}
 		if unicode.IsDigit(r) {
-			f64, err := in.readFloatLiteral([]rune{'.', r})
-			if err != nil {
-				return nil, err
+			val := []rune{'.', r}
+			for {
+				r, c, err := in.Rune(first)
+				if err != nil {
+					return nil, NewError(c, err)
+				}
+				if unicode.IsDigit(r) {
+					val = append(val, r)
+				} else {
+					in.UngetRune(r)
+					break
+				}
 			}
-			return &Token{
-				Column:   col,
-				Type:     TFloat,
-				FloatVal: Float64Value(f64),
-			}, nil
+			return in.parseFloatLiteral(col, val, '.')
 		}
 		in.UngetRune(r)
 		return &Token{
@@ -260,15 +265,20 @@ func (in *Input) getToken(first bool) (*Token, error) {
 		case '0', '1', '2', '3', '4', '5', '6', '7':
 			i64, err = in.readOctalLiteral([]rune{'0', r})
 		case '.':
-			f64, err := in.readFloatLiteral([]rune{'0', r})
-			if err != nil {
-				return nil, err
+			val := []rune{'0', r}
+			for {
+				r, c, err := in.Rune(first)
+				if err != nil {
+					return nil, NewError(c, err)
+				}
+				if unicode.IsDigit(r) {
+					val = append(val, r)
+				} else {
+					in.UngetRune(r)
+					break
+				}
 			}
-			return &Token{
-				Column:   col,
-				Type:     TFloat,
-				FloatVal: Float64Value(f64),
-			}, nil
+			return in.parseFloatLiteral(col, val, '.')
 		default:
 			in.UngetRune(r)
 		}
@@ -303,36 +313,55 @@ func (in *Input) getToken(first bool) (*Token, error) {
 		}
 		if unicode.IsDigit(r) {
 			val := []rune{r}
+			var numComma, lastComma, numPeriod, lastPeriod int
 			for {
 				r, c, err = in.Rune(first)
 				if err != nil {
 					return nil, NewError(c, err)
 				}
-				if unicode.IsDigit(r) {
-					val = append(val, r)
+				if r == ' ' {
 				} else if r == '.' {
-					f64, err := in.readFloatLiteral(append(val, r))
-					if err != nil {
-						return nil, err
-					}
-					return &Token{
-						Column:   col,
-						Type:     TFloat,
-						FloatVal: Float64Value(f64),
-					}, nil
+					numPeriod++
+					lastPeriod = len(val)
+					val = append(val, r)
+				} else if r == ',' {
+					numComma++
+					lastComma = len(val)
+					val = append(val, r)
+				} else if unicode.IsDigit(r) {
+					val = append(val, r)
 				} else {
 					in.UngetRune(r)
-					i64, err := strconv.ParseInt(string(val), 10, 64)
-					if err != nil {
-						return nil, NewError(col, err)
-					}
-					return &Token{
-						Column: col,
-						Type:   TInteger,
-						IntVal: Int64Value(i64),
-					}, nil
+					break
 				}
 			}
+
+			if numPeriod == 1 {
+				if numComma == 0 || lastPeriod > lastComma {
+					return in.parseFloatLiteral(col, val, '.')
+				} else if numComma == 1 && lastComma > lastPeriod {
+					return in.parseFloatLiteral(col, val, ',')
+				}
+			} else if numComma == 1 {
+				if numPeriod == 0 || lastComma > lastPeriod {
+					return in.parseFloatLiteral(col, val, ',')
+				} else if numPeriod == 1 && lastPeriod > lastComma {
+					return in.parseFloatLiteral(col, val, '.')
+				}
+			}
+			if numComma > 0 || numPeriod > 0 {
+				return nil, NewError(col,
+					fmt.Errorf("invalid float number: %v", string(val)))
+			}
+			i64, err := strconv.ParseInt(string(val), 10, 64)
+			if err != nil {
+				return nil, NewError(col, err)
+			}
+			return &Token{
+				Column: col,
+				Type:   TInteger,
+				IntVal: Int64Value(i64),
+			}, nil
 		}
 		return nil, NewError(col, fmt.Errorf("unexpected character '%c'", r))
 	}
@@ -385,19 +414,26 @@ func (in *Input) readHexLiteral(val []rune) (int64, error) {
 	}
 }
 
-func (in *Input) readFloatLiteral(val []rune) (float64, error) {
-	for {
-		r, c, err := in.Rune(false)
-		if err != nil {
-			return 0, NewError(c, err)
-		}
-		if unicode.IsDigit(r) {
-			val = append(val, r)
-		} else {
-			in.UngetRune(r)
-			return strconv.ParseFloat(string(val), 64)
+func (in *Input) parseFloatLiteral(col int, val []rune, sep rune) (
+	*Token, error) {
+
+	var clean []rune
+	for _, r := range val {
+		if r == sep {
+			clean = append(clean, '.')
+		} else if unicode.IsDigit(r) {
+			clean = append(clean, r)
 		}
 	}
+	f64, err := strconv.ParseFloat(string(clean), 64)
+	if err != nil {
+		return nil, err
+	}
+	return &Token{
+		Column:   col,
+		Type:     TFloat,
+		FloatVal: Float64Value(f64),
+	}, nil
 }
 
 // UngetToken ungets the token. The next call to GetToken will returns

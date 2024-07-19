@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020-2021 Markku Rossi
+// Copyright (c) 2020-2023 Markku Rossi
 //
 // All rights reserved.
 //
@@ -205,10 +205,54 @@ func parsePostfix() (Expr, error) {
 	case TFloat:
 		return t.FloatVal, nil
 
+	case TIdentifier:
+		return parseFunction(t.StrVal, t.Column)
+
 	default:
 		input.UngetToken(t)
 		return nil, NewError(t.Column, fmt.Errorf("unexpected token '%s'", t))
 	}
+}
+
+func parseFunction(name string, col int) (Expr, error) {
+	t, err := input.GetToken()
+	if err != nil {
+		return nil, err
+	}
+	if t.Type != '(' {
+		return nil, NewError(t.Column, fmt.Errorf("unexpected token '%s'", t))
+	}
+	t, err = input.GetToken()
+	if err != nil {
+		return nil, err
+	}
+	var args []Expr
+	if t.Type != ')' {
+		input.UngetToken(t)
+		for {
+			arg, err := parseExpr()
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, arg)
+			t, err = input.GetToken()
+			if err != nil {
+				return nil, err
+			}
+			if t.Type == ')' {
+				break
+			}
+			if t.Type != ',' {
+				return nil,
+					NewError(t.Column, fmt.Errorf("unexpected token '%s'", t))
+			}
+		}
+	}
+	return &Builtin{
+		name: name,
+		col:  col,
+		args: args,
+	}, nil
 }
 
 type binary struct {

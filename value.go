@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Markku Rossi
+// Copyright (c) 2020, 2024 Markku Rossi
 //
 // All rights reserved.
 //
@@ -97,8 +97,8 @@ func (b Base) Base() int {
 
 var formats = map[Base]byte{
 	Base2:      'b',
-	Base8:      'g',
-	Base10:     'g',
+	Base8:      'f',
+	Base10:     'f',
 	Base16:     'x',
 	BaseBinary: 'b',
 }
@@ -110,7 +110,7 @@ func (b Base) FloatFormat() byte {
 	if ok {
 		return fmt
 	}
-	return 'g'
+	return 'f'
 }
 
 func stringify(v int64, base Base) string {
@@ -263,7 +263,7 @@ func (v Int64Value) Eval() (Value, error) {
 type Float64Value float64
 
 func (v Float64Value) String() string {
-	return strconv.FormatFloat(float64(v), 'g', -1, 64)
+	return strconv.FormatFloat(float64(v), 'f', -1, 64)
 }
 
 // Format implements Value.Format().
