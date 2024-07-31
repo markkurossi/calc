@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Markku Rossi
+// Copyright (c) 2020-2024 Markku Rossi
 //
 // All rights reserved.
 //
@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 )
 
 // Type defines the supported primitive types.
@@ -25,19 +26,21 @@ const (
 	TypeInt64
 	TypeUint64
 	TypeFloat64
+	TypeBigFloat
 )
 
 var typeNames = map[Type]string{
-	TypeBool:    "bool",
-	TypeInt8:    "int8",
-	TypeUint8:   "uint8",
-	TypeInt16:   "int16",
-	TypeUint16:  "uint16",
-	TypeInt32:   "int32",
-	TypeUint32:  "uint32",
-	TypeInt64:   "int64",
-	TypeUint64:  "uint64",
-	TypeFloat64: "float64",
+	TypeBool:     "bool",
+	TypeInt8:     "int8",
+	TypeUint8:    "uint8",
+	TypeInt16:    "int16",
+	TypeUint16:   "uint16",
+	TypeInt32:    "int32",
+	TypeUint32:   "uint32",
+	TypeInt64:    "int64",
+	TypeUint64:   "uint64",
+	TypeFloat64:  "float64",
+	TypeBigFloat: "mpfloat",
 }
 
 func (t Type) String() string {
@@ -189,4 +192,29 @@ func ValueFloat64(value Value) (float64, error) {
 		return float64(v), nil
 	}
 	return 0, fmt.Errorf("type conversion from %T to float64 failed", value)
+}
+
+// ValueBigFloat returns the value as *big.Float.
+func ValueBigFloat(value Value) (*big.Float, error) {
+	switch v := value.(type) {
+	case BoolValue:
+		if v {
+			return big.NewFloat(1), nil
+		}
+		return big.NewFloat(0), nil
+	case Int8Value:
+		return big.NewFloat(float64(v)), nil
+	case Int16Value:
+		return big.NewFloat(float64(v)), nil
+	case Int32Value:
+		return big.NewFloat(float64(v)), nil
+	case Int64Value:
+		return big.NewFloat(float64(v)), nil
+	case Float64Value:
+		return big.NewFloat(float64(v)), nil
+	case BigFloatValue:
+		return v.f, nil
+	}
+	return nil, fmt.Errorf("type conversion from %T to *big.Float failed",
+		value)
 }

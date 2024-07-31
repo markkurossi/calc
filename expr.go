@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020-2023 Markku Rossi
+// Copyright (c) 2020-2024 Markku Rossi
 //
 // All rights reserved.
 //
@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 )
 
 var (
@@ -435,6 +436,34 @@ func (b binary) Eval() (Value, error) {
 		}
 		return Float64Value(result), nil
 
+	case TypeBigFloat:
+		i1, err := ValueBigFloat(v1)
+		if err != nil {
+			return nil, err
+		}
+		i2, err := ValueBigFloat(v2)
+		if err != nil {
+			return nil, err
+		}
+		result := big.NewFloat(0)
+		switch b.op {
+		case '/':
+			result = result.Quo(i1, i2)
+		case '*':
+			result = result.Mul(i1, i2)
+		case '+':
+			result = result.Add(i1, i2)
+		case '-':
+			result = result.Sub(i1, i2)
+		default:
+			return nil,
+				NewError(b.col, fmt.Errorf("unsupport binary operand '%s'",
+					b.op))
+		}
+		return BigFloatValue{
+			f: result,
+		}, nil
+
 	default:
 		return nil,
 			NewError(b.col,
@@ -503,6 +532,23 @@ func (n unary) Eval() (Value, error) {
 				val.Type(), n.op))
 		}
 		return Float64Value(result), nil
+
+	case TypeBigFloat:
+		ival, err := ValueBigFloat(val)
+		if err != nil {
+			return nil, err
+		}
+		result := big.NewFloat(0)
+		switch n.op {
+		case '-':
+			result = result.Neg(ival)
+		default:
+			return nil, NewError(n.col, fmt.Errorf("unsupported %s unary %s",
+				val.Type(), n.op))
+		}
+		return BigFloatValue{
+			f: result,
+		}, nil
 
 	default:
 		return nil,

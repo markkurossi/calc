@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 )
 
@@ -18,6 +19,9 @@ var (
 	_ Value = Int32Value(0)
 	_ Value = Int64Value(0)
 	_ Value = Float64Value(0)
+	_ Value = BigFloatValue{
+		f: big.NewFloat(0),
+	}
 )
 
 // Value implements a value.
@@ -281,5 +285,33 @@ func (v Float64Value) Type() Type {
 
 // Eval implements Expr.Eval().
 func (v Float64Value) Eval() (Value, error) {
+	return v, nil
+}
+
+// BigFloatValue implements big.Float values as Value.
+type BigFloatValue struct {
+	f *big.Float
+}
+
+func (v BigFloatValue) String() string {
+	return v.f.Text('f', -1)
+}
+
+// Format implements Value.Format().
+func (v BigFloatValue) Format(options Options) string {
+	if options.String {
+		ui64, _ := v.f.Uint64()
+		return stringify(int64(ui64), options.Base)
+	}
+	return v.f.Text(options.Base.FloatFormat(), -1)
+}
+
+// Type implements Value.Type().
+func (v BigFloatValue) Type() Type {
+	return TypeBigFloat
+}
+
+// Eval implements Expr.Eval().
+func (v BigFloatValue) Eval() (Value, error) {
 	return v, nil
 }

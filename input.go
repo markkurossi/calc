@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 	"unicode"
 )
@@ -67,10 +68,10 @@ func (t *Token) String() string {
 		return t.StrVal
 
 	case TInteger:
-		return fmt.Sprintf("%d", t.IntVal)
+		return fmt.Sprintf("%v", t.IntVal)
 
 	case TFloat:
-		return fmt.Sprintf("%f", t.FloatVal)
+		return fmt.Sprintf("%v", t.FloatVal)
 
 	default:
 		return t.Type.String()
@@ -425,14 +426,16 @@ func (in *Input) parseFloatLiteral(col int, val []rune, sep rune) (
 			clean = append(clean, r)
 		}
 	}
-	f64, err := strconv.ParseFloat(string(clean), 64)
+	f, _, err := big.ParseFloat(string(clean), 10, 1024, big.ToNearestEven)
 	if err != nil {
 		return nil, err
 	}
 	return &Token{
-		Column:   col,
-		Type:     TFloat,
-		FloatVal: Float64Value(f64),
+		Column: col,
+		Type:   TFloat,
+		FloatVal: BigFloatValue{
+			f: f,
+		},
 	}, nil
 }
 
