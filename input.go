@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020-2024 Markku Rossi
+// Copyright (c) 2020-2026 Markku Rossi
 //
 // All rights reserved.
 //
@@ -165,6 +165,26 @@ func (in *Input) getToken(first bool) (*Token, error) {
 			return &Token{
 				Column: col,
 				Type:   TLeftShift,
+			}, nil
+
+		default:
+			in.UngetRune(n)
+			return &Token{
+				Column: col,
+				Type:   TokenType(r),
+			}, nil
+		}
+
+	case '>':
+		n, _, err := in.Rune(first)
+		if err != nil {
+			return nil, NewError(col, err)
+		}
+		switch n {
+		case '>':
+			return &Token{
+				Column: col,
+				Type:   TRightShift,
 			}, nil
 
 		default:
